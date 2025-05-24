@@ -11,5 +11,7 @@ public interface TeamQueryService {
 
   List<TeamMemberResponse> getTeamMembers(Long userId, Long teamId);
 
+  List<TeamMemberResponse> getTeamMembersWithMood(Long userId, Long teamId);
+
   TeamInformationResponse getTeamInformation(Long userId, Long teamId);
 }

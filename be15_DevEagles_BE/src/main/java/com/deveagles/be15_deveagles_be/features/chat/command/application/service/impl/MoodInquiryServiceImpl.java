@@ -186,6 +186,14 @@ public class MoodInquiryServiceImpl implements MoodInquiryService {
     return getTodayUnansweredInquiry(userId).map(UserMoodHistory::getInquiryId);
   }
 
+  @Override
+  public Optional<UserMoodHistory> getLatestMoodHistory(String userId) {
+    log.debug("사용자 {}의 최근 감정 분석 결과 조회", userId);
+    return moodHistoryRepository
+        .findFirstByUserIdOrderByCreatedAtDesc(userId)
+        .filter(history -> history.getUserAnswer() != null);
+  }
+
   private String generateMoodQuestion() {
     try {
       GeminiTextResponse response =

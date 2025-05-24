@@ -10,4 +10,6 @@ public class TeamMemberResponse {
   private String userName;
   private String email;
   private String profileImageUrl;
+  private String latestMoodType;
+  private Integer latestMoodIntensity;
 }

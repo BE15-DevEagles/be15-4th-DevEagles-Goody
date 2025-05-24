@@ -48,11 +48,11 @@ export const useTeamStore = defineStore('team', {
         const teamRes = await api.get(`teams/teams/${teamId}`);
         this.currentTeam = teamRes.data.data;
 
-        // 팀 멤버 목록 조회
-        const memberRes = await api.get(`teams/${teamId}/members`);
+        // 팀 멤버 목록 조회 (감정 분석 포함)
+        const memberRes = await api.get(`teams/${teamId}/members/with-mood`);
         this.teamMembers = Array.isArray(memberRes.data.data) ? memberRes.data.data : [];
 
-        console.log('📦 멤버 API 응답:', memberRes.data.data);
+        console.log('📦 멤버 API 응답 (감정 포함):', memberRes.data.data);
 
         localStorage.setItem('lastSelectedTeam', teamId);
       } catch (err) {

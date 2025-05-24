@@ -326,17 +326,89 @@ class MoodInquiryServiceImplTest {
   @DisplayName("기분 조사 대기 상태 확인 테스트")
   void hasPendingMoodInquiry_returnsTrueWhenPending() {
     // Given
-    UserMoodHistory unansweredMoodHistory = mock(UserMoodHistory.class);
-    when(unansweredMoodHistory.getUserAnswer()).thenReturn(null);
+    UserMoodHistory unansweredInquiry =
+        UserMoodHistory.builder()
+            .userId(TEST_USER_ID)
+            .moodType(MoodType.NEUTRAL)
+            .inquiry("오늘 기분이 어떠신가요?")
+            .inquiryId(UUID.randomUUID().toString())
+            .createdAt(LocalDateTime.now())
+            .build(); // userAnswer가 null이므로 미답변 상태
 
-    List<UserMoodHistory> todayInquiries = Arrays.asList(unansweredMoodHistory);
     when(moodHistoryRepository.findByUserIdAndCreatedAtBetween(eq(TEST_USER_ID), any(), any()))
-        .thenReturn(todayInquiries);
+        .thenReturn(Arrays.asList(unansweredInquiry));
 
     // When
     boolean result = moodInquiryService.hasPendingMoodInquiry(TEST_USER_ID);
 
     // Then
     assertTrue(result);
+  }
+
+  @Test
+  @DisplayName("사용자의 최근 감정 분석 결과 조회 테스트 - 답변한 기록 있음")
+  void getLatestMoodHistory_returnsLatestAnsweredHistory() {
+    // Given
+    UserMoodHistory answeredHistory =
+        UserMoodHistory.builder()
+            .userId(TEST_USER_ID)
+            .moodType(MoodType.JOY)
+            .inquiry("기분이 어떠신가요?")
+            .inquiryId(UUID.randomUUID().toString())
+            .userAnswer("오늘은 기분이 좋아요!")
+            .createdAt(LocalDateTime.now())
+            .answeredAt(LocalDateTime.now())
+            .build();
+
+    when(moodHistoryRepository.findFirstByUserIdOrderByCreatedAtDesc(TEST_USER_ID))
+        .thenReturn(Optional.of(answeredHistory));
+
+    // When
+    Optional<UserMoodHistory> result = moodInquiryService.getLatestMoodHistory(TEST_USER_ID);
+
+    // Then
+    assertTrue(result.isPresent());
+    assertEquals(TEST_USER_ID, result.get().getUserId());
+    assertEquals(MoodType.JOY, result.get().getMoodType());
+    assertEquals("오늘은 기분이 좋아요!", result.get().getUserAnswer());
+    assertNotNull(result.get().getAnsweredAt());
+  }
+
+  @Test
+  @DisplayName("사용자의 최근 감정 분석 결과 조회 테스트 - 미답변 기록만 있음")
+  void getLatestMoodHistory_filtersOutUnansweredHistory() {
+    // Given
+    UserMoodHistory unansweredHistory =
+        UserMoodHistory.builder()
+            .userId(TEST_USER_ID)
+            .moodType(MoodType.NEUTRAL)
+            .inquiry("기분이 어떠신가요?")
+            .inquiryId(UUID.randomUUID().toString())
+            .userAnswer(null) // 미답변 상태
+            .createdAt(LocalDateTime.now())
+            .build();
+
+    when(moodHistoryRepository.findFirstByUserIdOrderByCreatedAtDesc(TEST_USER_ID))
+        .thenReturn(Optional.of(unansweredHistory));
+
+    // When
+    Optional<UserMoodHistory> result = moodInquiryService.getLatestMoodHistory(TEST_USER_ID);
+
+    // Then
+    assertFalse(result.isPresent());
+  }
+
+  @Test
+  @DisplayName("사용자의 최근 감정 분석 결과 조회 테스트 - 기록 없음")
+  void getLatestMoodHistory_returnsEmptyWhenNoHistory() {
+    // Given
+    when(moodHistoryRepository.findFirstByUserIdOrderByCreatedAtDesc(TEST_USER_ID))
+        .thenReturn(Optional.empty());
+
+    // When
+    Optional<UserMoodHistory> result = moodInquiryService.getLatestMoodHistory(TEST_USER_ID);
+
+    // Then
+    assertFalse(result.isPresent());
   }
 }
