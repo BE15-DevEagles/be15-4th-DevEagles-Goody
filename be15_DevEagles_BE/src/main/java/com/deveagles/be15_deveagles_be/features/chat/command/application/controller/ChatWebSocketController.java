@@ -3,6 +3,7 @@ package com.deveagles.be15_deveagles_be.features.chat.command.application.contro
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.request.ChatMessageRequest;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.response.ChatMessageResponse;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.AiChatService;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.AutoEmotionAnalysisService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatMessageService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.impl.WebSocketMessageService;
@@ -35,6 +36,7 @@ public class ChatWebSocketController {
   private final ChatMessageService chatMessageService;
   private final ChatRoomService chatRoomService;
   private final AiChatService aiChatService;
+  private final AutoEmotionAnalysisService autoEmotionAnalysisService;
   private final ChatRoomRepository chatRoomRepository;
   private final ReadReceiptRepository readReceiptRepository;
   private final WebSocketMessageService webSocketMessageService;
@@ -44,6 +46,7 @@ public class ChatWebSocketController {
       ChatMessageService chatMessageService,
       ChatRoomService chatRoomService,
       AiChatService aiChatService,
+      AutoEmotionAnalysisService autoEmotionAnalysisService,
       ChatRoomRepository chatRoomRepository,
       ReadReceiptRepository readReceiptRepository,
       WebSocketMessageService webSocketMessageService,
@@ -51,6 +54,7 @@ public class ChatWebSocketController {
     this.chatMessageService = chatMessageService;
     this.chatRoomService = chatRoomService;
     this.aiChatService = aiChatService;
+    this.autoEmotionAnalysisService = autoEmotionAnalysisService;
     this.chatRoomRepository = chatRoomRepository;
     this.readReceiptRepository = readReceiptRepository;
     this.webSocketMessageService = webSocketMessageService;
@@ -87,12 +91,26 @@ public class ChatWebSocketController {
               if (chatRoom.getType() == ChatRoomType.AI) {
                 log.info("AI 채팅방에 메시지 수신: {}", aiRequest.getContent());
 
+                // AI 응답 생성
                 CompletableFuture.runAsync(
                     () -> {
                       try {
                         aiChatService.processUserMessage(aiRequest);
                       } catch (Exception e) {
                         log.error("AI 응답 생성 중 오류 발생", e);
+                      }
+                    });
+
+                // 자동 감정 분석 (5개 메시지마다)
+                CompletableFuture.runAsync(
+                    () -> {
+                      try {
+                        autoEmotionAnalysisService.processUserMessage(
+                            aiRequest.getSenderId(),
+                            aiRequest.getChatroomId(),
+                            aiRequest.getContent());
+                      } catch (Exception e) {
+                        log.error("자동 감정 분석 중 오류 발생", e);
                       }
                     });
               }
