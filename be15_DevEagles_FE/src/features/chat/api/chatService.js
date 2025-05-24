@@ -1,5 +1,6 @@
 import api from '@/api/axios';
 import { sendWebSocketMessage, initializeWebSocket } from './webSocketService';
+import { createOrGetAiChatRoom } from './aiChatService';
 import { useAuthStore } from '@/store/auth.js';
 
 export async function getChatRooms() {
@@ -136,19 +137,5 @@ export function initializeChat() {
   }
 }
 
-// AI 채팅방 생성 또는 가져오기
-export async function createOrGetAiChatRoom(userId, aiName = '수리AI') {
-  try {
-    const response = await api.post('/chatrooms/ai', null, {
-      params: {
-        teamId: null, // AI 채팅방은 팀과 무관
-        userId,
-        name: aiName,
-      },
-    });
-    return response.data.data;
-  } catch (error) {
-    console.error('AI 채팅방 생성 실패:', error);
-    throw error;
-  }
-}
+// AI 채팅방 생성 또는 가져오기 - aiChatService에서 import
+export { createOrGetAiChatRoom };
