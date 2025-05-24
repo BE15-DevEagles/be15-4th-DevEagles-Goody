@@ -463,7 +463,7 @@
   } = useChatInfiniteScroll(infiniteScrollCallback);
 
   // 디바운스 설정
-  const { debouncedFn: debouncedMarkAsRead } = useDebounce(markLatestMessageAsRead, 500);
+  const { debouncedFn: debouncedMarkAsRead } = useDebounce(markMessageAsRead, 500);
 
   // 계산된 속성
   const isNotificationEnabled = computed(() => {
