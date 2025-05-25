@@ -2,6 +2,7 @@ package com.deveagles.be15_deveagles_be.features.user.command.application.servic
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserEmailPasswordRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
@@ -32,6 +33,7 @@ public class UserCommandServiceImpl implements UserCommandService {
   private final ModelMapper modelMapper;
   private final PasswordEncoder passwordEncoder;
   private final AmazonS3 amazonS3;
+  private final ChatRoomService chatRoomService;
 
   @Value("${cloud.aws.s3.bucket}")
   private String bucket;
@@ -60,7 +62,16 @@ public class UserCommandServiceImpl implements UserCommandService {
       String profileUrl = saveProfile(profile);
       user.setProfile(profileUrl);
     }
-    userRepository.save(user);
+    User savedUser = userRepository.save(user);
+
+    // 개인 AI 채팅방 생성 (teamId는 null로 설정)
+    try {
+      chatRoomService.createOrGetPersonalAiChatRoom(
+          null, String.valueOf(savedUser.getUserId()), "수리AI");
+    } catch (Exception e) {
+      // AI 채팅방 생성 실패 시 로그만 남기고 회원가입은 계속 진행
+      // 실제 운영에서는 더 세밀한 에러 처리가 필요할 수 있음
+    }
   }
 
   @Override

@@ -2,6 +2,10 @@ package com.deveagles.be15_deveagles_be.features.chat.command.application.contro
 
 import com.deveagles.be15_deveagles_be.common.dto.ApiResponse;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.response.UserStatusMessage;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/user-status")
 @RequiredArgsConstructor
+@Tag(name = "사용자 상태", description = "사용자 온라인/오프라인 상태 관리 API")
 public class UserStatusController {
 
   private final RedisTemplate<String, String> redisTemplate;
@@ -26,6 +31,17 @@ public class UserStatusController {
   private static final String USER_STATUS_TOPIC = "/topic/status";
 
   @GetMapping("/online-users")
+  @Operation(summary = "온라인 사용자 목록 조회", description = "현재 온라인 상태인 사용자 목록을 조회합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "온라인 사용자 목록 조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<Set<String>>> getOnlineUsers() {
     try {
       Set<String> onlineUsers = redisTemplate.opsForSet().members(REDIS_KEY_ONLINE_USERS);
@@ -38,6 +54,17 @@ public class UserStatusController {
   }
 
   @DeleteMapping("/logout")
+  @Operation(summary = "사용자 로그아웃", description = "사용자를 오프라인 상태로 변경하고 다른 사용자들에게 알립니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "로그아웃 처리 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "401",
+            description = "인증 실패",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
     try {
       if (authentication != null && authentication.getName() != null) {
