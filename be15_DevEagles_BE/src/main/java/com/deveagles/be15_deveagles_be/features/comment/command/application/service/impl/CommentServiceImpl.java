@@ -67,13 +67,19 @@ public class CommentServiceImpl implements CommentService {
   @Transactional(readOnly = true)
   @Override
   public List<CommentResponse> getComments(Long worklogId, Long userId) {
-    WorklogDetailResponse worklog = worklogService.getWorklogById(worklogId, userId);
+    WorklogDetailResponse worklog;
+
+    try {
+      worklog = worklogService.getWorklogById(worklogId, userId);
+    } catch (TeamBusinessException e) {
+      throw new CommentBusinessException(CommentErrorCode.NO_PERMISSION);
+    }
+
     if (worklog.getWorklogId() == null) {
       throw new CommentBusinessException(CommentErrorCode.INVALID_REQUEST);
     }
-    Long teamId = worklog.getTeamId();
-    validateTeamMemberExists(teamId, userId);
 
+    Long teamId = worklog.getTeamId();
     List<Comment> comments = commentRepository.findByWorklogIdAndDeletedAtIsNull(worklogId);
 
     return comments.stream()
