@@ -25,7 +25,7 @@ public class ChatRedisSyncScheduler {
   private static final String REDIS_ONLINE_USERS_KEY = "chat:online_users";
   private static final String REDIS_CHAT_MESSAGES_PREFIX = "chat:messages:";
 
-  @Scheduled(fixedRate = 300000)
+  @Scheduled(fixedRate = 60000)
   @Transactional
   public void syncReadStatusToMongoDB() {
     log.info("Redis에서 MongoDB로 읽음 상태 동기화 시작");

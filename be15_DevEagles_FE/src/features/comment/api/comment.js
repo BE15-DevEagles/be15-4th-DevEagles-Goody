@@ -16,3 +16,7 @@ export const updateComment = (commentId, commentContent) => {
     commentContent,
   });
 };
+
+export const deleteComment = commentId => {
+  return api.delete(`comments/${commentId}`);
+};

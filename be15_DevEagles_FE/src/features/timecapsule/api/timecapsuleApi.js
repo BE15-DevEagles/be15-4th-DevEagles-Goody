@@ -2,7 +2,7 @@ import api from '@/api/axios';
 
 export async function createTimecapsule({ timecapsuleContent, openDate, teamId }) {
   try {
-    const response = await api.post('/api/v1/timecapsules', {
+    const response = await api.post('/timecapsules', {
       timecapsuleContent,
       openDate,
       teamId,
