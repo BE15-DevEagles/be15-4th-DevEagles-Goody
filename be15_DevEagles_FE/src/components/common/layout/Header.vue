@@ -42,19 +42,19 @@
               class="rounded-full bg-white h-8 w-8 overflow-hidden flex items-center justify-center border-2 border-white"
             >
               <img
-                v-if="user.userThumbnail"
-                :src="user.userThumbnail"
-                :alt="user.name"
+                v-if="userThumbnailUrl"
+                :src="userThumbnailUrl"
+                :alt="name"
                 class="w-full h-full object-cover"
               />
               <div
                 v-else
                 class="w-full h-full flex items-center justify-center bg-[var(--color-primary-300)] text-white font-one-liner-semibold"
               >
-                {{ user.name ? user.name.charAt(0) : '?' }}
+                {{ name ? name.charAt(0) : '?' }}
               </div>
             </div>
-            <span class="font-one-liner-semibold">{{ user.name }}</span>
+            <span class="font-one-liner-semibold">{{ name }}</span>
           </button>
 
           <!-- 드롭다운 메뉴 -->
@@ -85,18 +85,14 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue';
   import { logout } from '@/features/user/api/user.js';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/store/auth.js';
+  import { storeToRefs } from 'pinia';
 
   const router = useRouter();
   const authStore = useAuthStore();
-
-  const user = ref({
-    name: authStore.name, // 예시 이름
-    userThumbnail: authStore.userThumbnailUrl, // 예시 (null이면 첫 글자 표시)
-  });
+  const { name, userThumbnailUrl } = storeToRefs(authStore);
 
   const handleLogout = async () => {
     try {
