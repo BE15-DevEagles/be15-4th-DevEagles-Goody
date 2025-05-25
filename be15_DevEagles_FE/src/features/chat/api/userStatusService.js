@@ -1,5 +1,9 @@
 import api from '@/api/axios';
 
+/**
+ * 현재 온라인 사용자 목록 조회
+ * @returns {Promise<string[]>} 온라인 사용자 ID 배열
+ */
 export async function getOnlineUsers() {
   try {
     const response = await api.get('/user-status/online-users');
@@ -18,6 +22,10 @@ export async function getOnlineUsers() {
   }
 }
 
+/**
+ * 사용자 로그아웃 시 오프라인 상태로 변경
+ * @returns {Promise<boolean>} 성공 여부
+ */
 export async function logoutUserStatus() {
   try {
     const response = await api.delete('/user-status/logout');

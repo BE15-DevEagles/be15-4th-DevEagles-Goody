@@ -4,7 +4,7 @@ import { getOnlineUsers } from '@/features/chat/api/userStatusService';
 
 export const useUserStatusStore = defineStore('userStatus', {
   state: () => ({
-    onlineUsers: new Set(), // 온라인 사용자 ID 집합
+    onlineUsers: new Set(),
     isInitialized: false,
   }),
 
@@ -25,11 +25,9 @@ export const useUserStatusStore = defineStore('userStatus', {
   },
 
   actions: {
-    // 사용자 상태 업데이트
     updateUserStatus(userId, isOnline) {
       const userIdStr = String(userId).trim();
 
-      // 유효하지 않은 사용자 ID 필터링
       if (
         !userIdStr ||
         userIdStr === 'null' ||
@@ -37,6 +35,14 @@ export const useUserStatusStore = defineStore('userStatus', {
         userIdStr.includes('@')
       ) {
         console.warn(`[UserStatusStore] 유효하지 않은 사용자 ID 무시: "${userIdStr}"`);
+        return;
+      }
+
+      const currentlyOnline = this.onlineUsers.has(userIdStr);
+      if (currentlyOnline === isOnline) {
+        console.log(
+          `[UserStatusStore] 사용자 ${userIdStr} 상태 변경 없음 (이미 ${isOnline ? '온라인' : '오프라인'})`
+        );
         return;
       }
 
