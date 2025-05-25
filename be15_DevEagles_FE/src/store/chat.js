@@ -9,7 +9,6 @@ import {
   isWebSocketConnected,
 } from '@/features/chat/api/webSocketService';
 import { useNotifications } from '@/features/chat/composables/useNotifications';
-import { useUserStatus } from '@/features/user/composables/useUserStatus';
 import { transformChatRoom } from '@/features/chat/utils/chatUtils';
 import { formatLastMessageTime } from '@/features/chat/utils/timeUtils';
 
@@ -396,10 +395,6 @@ export const useChatStore = defineStore('chat', {
     async initialize() {
       await this.initializeWebSocketConnection();
       await this.loadChatRooms();
-
-      // 사용자 상태 구독 초기화
-      const { initializeUserStatus } = useUserStatus();
-      initializeUserStatus();
     },
 
     // 정리

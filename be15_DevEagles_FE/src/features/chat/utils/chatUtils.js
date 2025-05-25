@@ -169,7 +169,6 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
     lastMessageTimestamp: room.lastMessage?.timestamp,
     unreadCount: room.unreadCount || 0,
     participants: room.participants || [],
-    currentUserId: currentUserId,
     notificationEnabled: currentUserParticipant?.notificationEnabled ?? true,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt,
