@@ -64,6 +64,8 @@ public class SecurityConfig {
                         "api/v1/timecapsules",
                         "api/v1/chat")
                     .permitAll()
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/users/email/pwd")
+                    .permitAll()
                     .requestMatchers(
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
