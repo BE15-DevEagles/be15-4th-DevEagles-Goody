@@ -31,7 +31,7 @@
       <!-- 채팅 목록 -->
       <div v-else>
         <div
-          v-for="chat in chats"
+          v-for="chat in chatsWithStatus"
           :key="chat.id"
           class="p-3 border-b border-[var(--color-gray-200)] hover:bg-[var(--color-gray-100)] cursor-pointer transition-colors"
           @click="handleChatSelect(chat)"
@@ -59,9 +59,7 @@
               <div
                 v-if="chat.type === 'DIRECT' && chat.isOnline !== undefined"
                 class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
-                :class="
-                  chat.isOnline ? 'bg-[var(--color-success-300)]' : 'bg-[var(--color-gray-400)]'
-                "
+                :class="chat.isOnline ? 'bg-green-500' : 'bg-gray-400'"
               ></div>
 
               <!-- AI 채팅 표시 -->
@@ -131,8 +129,9 @@
 </template>
 
 <script setup>
-  import { defineProps, defineEmits } from 'vue';
+  import { defineProps, defineEmits, computed } from 'vue';
   import { useNotifications } from '@/features/chat/composables/useNotifications';
+  import { useUserStatusStore } from '@/store/userStatus';
   import {
     getChatTypeClass,
     getChatDisplayChar,
@@ -140,6 +139,7 @@
   } from '@/features/chat/utils/chatUtils';
 
   const { isNotificationEnabled } = useNotifications();
+  const userStatusStore = useUserStatusStore();
 
   /**
    * Props:
@@ -189,6 +189,23 @@
    * this.$emit('select-chat', { id: 1, name: '김경록', ... })
    */
   const emit = defineEmits(['select-chat', 'retry-load']);
+
+  // 실제 온라인 상태를 반영한 채팅 목록
+  const chatsWithStatus = computed(() => {
+    return props.chats.map(chat => {
+      if (chat.type === 'DIRECT' && chat.participants && chat.participants.length > 0) {
+        // 1:1 채팅에서 상대방의 온라인 상태 확인
+        const otherParticipant = chat.participants.find(p => p.userId !== chat.currentUserId);
+        if (otherParticipant) {
+          return {
+            ...chat,
+            isOnline: userStatusStore.isUserOnline(otherParticipant.userId),
+          };
+        }
+      }
+      return chat;
+    });
+  });
 
   // 채팅 선택 처리
   function handleChatSelect(chat) {

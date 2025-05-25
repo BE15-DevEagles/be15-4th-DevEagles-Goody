@@ -26,7 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
       userStatus.value === 'ENABLED'
   );
 
-  function setAuth(at) {
+  async function setAuth(at) {
     accessToken.value = at;
     try {
       const payload = decodeJwtPayload(at);
@@ -39,12 +39,24 @@ export const useAuthStore = defineStore('auth', () => {
       returnUser.value = payload.returnUser;
 
       localStorage.setItem('accessToken', at);
+
+      // 인증 완료 후 사용자 상태 초기화
+      if (userStatus.value === 'ENABLED') {
+        try {
+          const { useUserStatusStore } = await import('@/store/userStatus');
+          const userStatusStore = useUserStatusStore();
+          await userStatusStore.initializeUserStatusSubscription();
+        } catch (error) {
+          console.error('사용자 상태 초기화 실패:', error);
+        }
+      }
     } catch (e) {
       clearAuth();
     }
   }
 
   function clearAuth() {
+    // 인증 정보 삭제
     accessToken.value = null;
     userId.value = null;
     name.value = null;
@@ -54,12 +66,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+
+    console.log('[Auth] 인증 정보 삭제 완료');
   }
 
-  function initAuth() {
+  async function initAuth() {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      setAuth(token);
+      await setAuth(token);
     }
   }
 

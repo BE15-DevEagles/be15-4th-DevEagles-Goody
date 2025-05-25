@@ -77,17 +77,21 @@ public class WebSocketEventHandler {
         try {
           redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
           logger.info("User {} removed from online users in Redis.", userId);
+
+          // 오프라인 상태 브로드캐스트
+          notifyUserStatusChange(userId, false);
+          logger.info("User {} offline status broadcasted to all users.", userId);
         } catch (Exception e) {
           logger.error(
               "Failed to remove user {} from online_users in Redis: {}", userId, e.getMessage(), e);
         }
-
-        notifyUserStatusChange(userId, false);
       } else {
         logger.info(
             "User {} still has other active sessions. Not removing from Redis online list.",
             userId);
       }
+    } else {
+      logger.warn("세션 ID {}에 대한 사용자 정보를 찾을 수 없음", sessionId);
     }
   }
 

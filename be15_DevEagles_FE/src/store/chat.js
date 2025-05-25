@@ -82,12 +82,20 @@ export const useChatStore = defineStore('chat', {
         this.isLoading = true;
         this.error = null;
 
-        const chatRooms = await getChatRooms();
+        const { useTeamStore } = await import('./team');
+        const teamStore = useTeamStore();
+
+        // 현재 팀 ID가 없으면 빈 배열 반환
+        if (!teamStore.currentTeamId) {
+          console.warn('[loadChatRooms] 현재 팀이 선택되지 않았습니다.');
+          this.chats = [];
+          return;
+        }
+
+        const chatRooms = await getChatRooms(teamStore.currentTeamId);
 
         if (chatRooms && Array.isArray(chatRooms)) {
           const authStore = useAuthStore();
-          const { useTeamStore } = await import('./team');
-          const teamStore = useTeamStore();
 
           // 팀원 정보 가져오기
           const teamMembers = teamStore.teamMembers || [];
@@ -95,6 +103,12 @@ export const useChatStore = defineStore('chat', {
           this.chats = chatRooms.map(room =>
             transformChatRoom(room, authStore.userId, teamMembers)
           );
+
+          console.log('[loadChatRooms] 현재 팀 채팅방 로드 완료:', {
+            teamId: teamStore.currentTeamId,
+            chatCount: this.chats.length,
+            teamMemberCount: teamMembers.length,
+          });
 
           // 알림 설정 초기화 (채팅방 데이터에서)
           const { initializeFromChatData, loadNotificationSettings } = useNotifications();
@@ -171,7 +185,7 @@ export const useChatStore = defineStore('chat', {
         return false;
       }
 
-      const success = sendWebSocketMessage(chatId, content, authStore.userId, authStore.userName);
+      const success = sendWebSocketMessage(chatId, content, authStore.userId, authStore.name);
 
       if (success) {
         this.updateChatAfterSending(chatId, content);
@@ -251,12 +265,28 @@ export const useChatStore = defineStore('chat', {
 
           if (!senderName || senderName.trim() === '') {
             if (chat.type === 'DIRECT') {
+              // 1:1 채팅에서는 채팅방 이름(상대방 이름) 사용
               senderName = chat.name;
             } else if (chat.participants) {
+              // 그룹 채팅에서는 참가자 목록에서 발신자 찾기
               const sender = chat.participants.find(
                 p => String(p.userId) === String(message.senderId)
               );
-              senderName = sender?.userName || sender?.name || '알 수 없는 사용자';
+              // 다양한 필드명 시도
+              senderName =
+                sender?.userName || sender?.name || sender?.nickname || '알 수 없는 사용자';
+
+              console.log('[processIncomingMessage] 참가자에서 발신자 찾기:', {
+                senderId: message.senderId,
+                foundSender: sender,
+                senderName: senderName,
+                allParticipants: chat.participants.map(p => ({
+                  userId: p.userId,
+                  userName: p.userName,
+                  name: p.name,
+                  nickname: p.nickname,
+                })),
+              });
             } else {
               senderName = '알 수 없는 사용자';
             }
@@ -266,6 +296,9 @@ export const useChatStore = defineStore('chat', {
             chatroomId: message.chatroomId,
             senderName: senderName,
             content: message.content?.substring(0, 30),
+            originalSenderName: message.senderName,
+            chatType: chat.type,
+            chatName: chat.name,
           });
 
           showChatNotification({
@@ -316,7 +349,7 @@ export const useChatStore = defineStore('chat', {
         throw new Error('사용자 이름 정보가 없습니다.');
       }
 
-      // 기존 1:1 채팅이 있는지 확인
+      // 현재 팀의 채팅방 목록에서 기존 1:1 채팅 확인
       let existingChat = this.chats.find(chat => {
         if (chat.type !== 'DIRECT') return false;
 
@@ -334,13 +367,14 @@ export const useChatStore = defineStore('chat', {
       });
 
       if (existingChat) {
+        console.log('[startDirectChat] 기존 1:1 채팅방 발견:', existingChat.id);
         return existingChat;
       }
 
       // 새로운 1:1 채팅방 생성
       const requestData = {
         teamId: String(teamStore.currentTeamId),
-        name: userName,
+        name: `1:1 채팅`, // 일반적인 이름으로 설정
         type: 'DIRECT',
         participantIds: [String(authStore.userId), String(userId)], // 현재 사용자와 대상 사용자 모두 포함
       };
@@ -384,6 +418,12 @@ export const useChatStore = defineStore('chat', {
             (chat.type === 'DIRECT' &&
               chat.participants?.some(p => String(p.userId) === String(userId)))
         );
+
+        console.log('[startDirectChat] 채팅방 생성 완료:', {
+          newRoomId: newRoom.id,
+          foundChat: createdChat ? createdChat.id : 'not found',
+          teamId: teamStore.currentTeamId,
+        });
 
         return createdChat || transformedRoom;
       } else {

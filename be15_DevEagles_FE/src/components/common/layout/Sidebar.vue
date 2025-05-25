@@ -36,20 +36,44 @@
         <div class="flex items-center px-2 mb-2">
           <h2 class="text-[var(--color-gray-400)] font-small-semibold uppercase">팀 채널</h2>
         </div>
-        <li
-          v-for="(channel, index) in channels"
-          :key="index"
-          class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200"
-          :class="
-            channel.active
-              ? 'bg-[var(--color-primary-300)] text-white'
-              : 'text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white'
-          "
-          @click="handleChannelClick(channel)"
-        >
-          <span class="mr-3 font-one-liner">#</span>
-          <span class="font-one-liner truncate">{{ channel.name }}</span>
-        </li>
+        <ul>
+          <li v-for="(channel, index) in channels" :key="index" class="flex flex-col">
+            <div
+              class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200"
+              :class="
+                channel.active
+                  ? 'bg-[var(--color-primary-300)] text-white'
+                  : 'text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white'
+              "
+              @click="
+                channel.name === '타임캡슐' ? toggleTimecapsuleMenu() : handleChannelClick(channel)
+              "
+            >
+              <span class="mr-3 font-one-liner">#</span>
+              <span class="font-one-liner truncate">{{ channel.name }}</span>
+              <span v-if="channel.name === '타임캡슐'" class="ml-auto">
+                <svg width="16" height="16" fill="currentColor">
+                  <path d="M4 6l4 4 4-4" />
+                </svg>
+              </span>
+            </div>
+            <!-- 타임캡슐 하위 메뉴 -->
+            <ul v-if="channel.name === '타임캡슐' && timecapsuleOpen" class="ml-6">
+              <li
+                class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200 font-one-liner truncate text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white"
+                @click.stop="goRoute('/timecapsule/create')"
+              >
+                타임캡슐 생성
+              </li>
+              <li
+                class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200 font-one-liner truncate text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white"
+                @click.stop="goRoute('/timecapsule/list')"
+              >
+                타임캡슐 조회
+              </li>
+            </ul>
+          </li>
+        </ul>
       </div>
     </div>
   </aside>
@@ -121,4 +145,13 @@
     { name: '타임캡슐', active: false },
     { name: '룰렛', active: false },
   ]);
+
+  const timecapsuleOpen = ref(false);
+  function toggleTimecapsuleMenu() {
+    timecapsuleOpen.value = !timecapsuleOpen.value;
+  }
+
+  function goRoute(route) {
+    router.push(route);
+  }
 </script>

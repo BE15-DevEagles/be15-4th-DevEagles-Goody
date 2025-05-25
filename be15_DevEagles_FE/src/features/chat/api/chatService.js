@@ -3,9 +3,14 @@ import { sendWebSocketMessage, initializeWebSocket } from './webSocketService';
 import { createOrGetAiChatRoom } from './aiChatService';
 import { useAuthStore } from '@/store/auth.js';
 
-export async function getChatRooms() {
+export async function getChatRooms(teamId = null) {
   try {
-    const response = await api.get('/chatrooms');
+    const params = {};
+    if (teamId) {
+      params.teamId = teamId;
+    }
+
+    const response = await api.get('/chatrooms', { params });
     return response.data.data.chatrooms;
   } catch (error) {
     console.error('채팅방 목록 조회 실패:', error);

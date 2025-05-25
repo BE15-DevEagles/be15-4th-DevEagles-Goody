@@ -2,7 +2,7 @@
   import { ref, computed, onMounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import BaseButton from '@/components/common/components/BaseButton.vue';
-  import BaseModal from '@/components/common/components/BaseModal.vue';
+  import ConfirmModal from '@/features/worklog/components//ConfirmModal.vue';
   import { generateSummary } from '@/features/worklog/api/worklog.js';
   import api from '@/api/axios';
   import { useTeamStore } from '@/store/team.js';
@@ -101,7 +101,7 @@
   }
 
   function spellCheck() {
-    // 추후 백엔드 맞춤법 검사 API 연동
+    // 추후 맞춤법 API 연동
   }
 </script>
 
@@ -110,16 +110,13 @@
     <div class="mb-4">
       <label class="form-label font-semibold">업무일지 제목</label>
       <div class="flex items-center gap-2">
-        <!-- 입력창 -->
         <input
           v-model="form.summary"
           class="input flex-1 min-w-0"
           placeholder="제목을 입력하세요"
         />
 
-        <!-- 버튼 + ? 아이콘 (absolute 배치) -->
         <div class="relative">
-          <!-- ? 아이콘 -->
           <div class="tooltip-container absolute -top-8 left-1/2 -translate-x-1/2">
             <span
               class="tooltip-icon"
@@ -132,7 +129,6 @@
             </div>
           </div>
 
-          <!-- AI 요약 버튼 -->
           <button
             class="btn btn-primary whitespace-nowrap px-4"
             :disabled="!form.content || !form.notice"
@@ -143,6 +139,7 @@
         </div>
       </div>
     </div>
+
     <div class="mb-4 flex gap-4 items-end">
       <div class="flex flex-col">
         <label class="form-label">작성일자</label>
@@ -182,24 +179,27 @@
         맞춤법 검사
       </BaseButton>
 
-      <BaseButton class="btn btn-danger" @click="openCancelModal"> 취소 </BaseButton>
+      <BaseButton class="btn btn-danger" @click="openCancelModal">취소</BaseButton>
     </div>
 
-    <BaseModal v-model="showSubmitModal" title="제출 확인">
-      <template #default>업무일지를 제출하시겠습니까?</template>
-      <template #footer>
-        <BaseButton @click="submit">확인</BaseButton>
-        <BaseButton @click="showSubmitModal = false">취소</BaseButton>
-      </template>
-    </BaseModal>
+    <!-- ✅ 모달 컴포넌트 -->
+    <ConfirmModal
+      v-model="showSubmitModal"
+      title="제출 확인"
+      message="업무일지를 제출하시겠습니까?"
+      confirm-text="확인"
+      cancel-text="취소"
+      @confirm="submit"
+    />
 
-    <BaseModal v-model="showCancelModal" title="작성 취소">
-      <template #default>작성을 취소하시겠습니까?</template>
-      <template #footer>
-        <BaseButton class="btn btn-danger" @click="cancel">확인</BaseButton>
-        <BaseButton class="btn" @click="showCancelModal = false">계속 작성</BaseButton>
-      </template>
-    </BaseModal>
+    <ConfirmModal
+      v-model="showCancelModal"
+      title="작성 취소"
+      message="작성을 취소하시겠습니까?"
+      confirm-text="확인"
+      cancel-text="계속 작성"
+      @confirm="cancel"
+    />
 
     <div v-if="loading" class="loading-overlay">
       <div class="loading-spinner"></div>
@@ -208,25 +208,24 @@
 </template>
 
 <style scoped>
+  /* 툴팁, 로딩, 버튼 색상 등은 이전 스타일 그대로 유지 */
   .tooltip-container {
     position: relative;
     display: inline-block;
   }
-
   .tooltip-icon {
     width: 1rem;
     height: 1rem;
     background-color: var(--color-info-400);
     color: white;
-    border-radius: 50%; /* 완전한 원형 */
-    display: flex; /* flex로 중앙 정렬 */
+    border-radius: 50%;
+    display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
     cursor: pointer;
     font-size: 1rem;
   }
-
   .tooltip-content {
     position: absolute;
     top: 50%;
@@ -244,17 +243,14 @@
       visibility 0.2s ease;
     z-index: 10;
   }
-
   .tooltip-content.left-align {
     right: 110%;
     left: auto;
   }
-
   .tooltip-content.visible {
     opacity: 1;
     visibility: visible;
   }
-
   .loading-overlay {
     position: fixed;
     top: 0;
@@ -281,19 +277,16 @@
     }
   }
   .btn-warning {
-    background-color: var(--color-warning-500); /* 진한 색을 기본값으로! */
+    background-color: var(--color-warning-500);
     color: var(--color-neutral-white);
   }
-
   .btn-warning:hover {
     background-color: var(--color-warning-600);
   }
-
   .btn-danger {
-    background-color: var(--color-error-500); /* 기본 상태부터 진하게 */
+    background-color: var(--color-error-500);
     color: var(--color-neutral-white);
   }
-
   .btn-danger:hover {
     background-color: var(--color-error-600);
   }
