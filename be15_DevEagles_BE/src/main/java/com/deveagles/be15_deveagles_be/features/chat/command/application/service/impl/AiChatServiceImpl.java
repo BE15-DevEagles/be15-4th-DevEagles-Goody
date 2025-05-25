@@ -14,15 +14,18 @@ import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.C
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.UserMoodHistoryRepository;
 import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.GeminiApiAdapter;
 import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.GeminiApiAdapter.GeminiTextResponse;
-import java.time.LocalDate;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -35,6 +38,7 @@ public class AiChatServiceImpl implements AiChatService {
   private static final String AI_NAME = "수리 AI";
   private static final String AI_USER_ID = "ai-assistant";
   private static final long SESSION_TIMEOUT_HOURS = 24;
+  private static final int MAX_CACHE_SIZE = 1000; // 최대 캐시 크기
 
   private final ChatMessageRepository chatMessageRepository;
   private final ChatRoomRepository chatRoomRepository;
@@ -44,7 +48,19 @@ public class AiChatServiceImpl implements AiChatService {
   private final MoodInquiryService moodInquiryService;
   private final GeminiApiAdapter geminiApiAdapter;
 
-  private final Map<String, Map<String, Object>> userChatContexts = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, Object>> userChatContexts =
+      new LinkedHashMap<String, Map<String, Object>>(MAX_CACHE_SIZE, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Map<String, Object>> eldest) {
+          if (size() > MAX_CACHE_SIZE) {
+            log.info("LRU 캐시 한계 도달 - 가장 오래된 세션 제거: {}", eldest.getKey());
+            return true;
+          }
+          return false;
+        }
+      };
+
+  private final ScheduledExecutorService cleanupExecutor = Executors.newScheduledThreadPool(1);
 
   public AiChatServiceImpl(
       ChatMessageRepository chatMessageRepository,
@@ -63,11 +79,31 @@ public class AiChatServiceImpl implements AiChatService {
     this.geminiApiAdapter = geminiApiAdapter;
   }
 
+  @PostConstruct
+  public void init() {
+    cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredSessions, 1, 1, TimeUnit.HOURS);
+    log.info("AI 채팅 서비스 초기화 - 백그라운드 정리 작업 시작");
+  }
+
+  @PreDestroy
+  public void destroy() {
+    cleanupExecutor.shutdown();
+    try {
+      if (!cleanupExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+        cleanupExecutor.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      cleanupExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+    log.info("AI 채팅 서비스 종료 - 백그라운드 정리 작업 중단");
+  }
+
   private String getContextKey(String userId, String chatroomId) {
     return userId + ":" + chatroomId;
   }
 
-  private void updateSessionActivity(String userId, String chatroomId) {
+  private synchronized void updateSessionActivity(String userId, String chatroomId) {
     String contextKey = getContextKey(userId, chatroomId);
     Map<String, Object> context = userChatContexts.get(contextKey);
     if (context != null) {
@@ -77,7 +113,7 @@ public class AiChatServiceImpl implements AiChatService {
     }
   }
 
-  private void cleanupExpiredSessions() {
+  private synchronized void cleanupExpiredSessions() {
     LocalDateTime now = LocalDateTime.now();
     List<String> keysToRemove = new ArrayList<>();
 
@@ -90,9 +126,15 @@ public class AiChatServiceImpl implements AiChatService {
           }
         });
 
-    for (String key : keysToRemove) {
-      userChatContexts.remove(key);
-      log.info("만료된 AI 채팅 세션 정리: {}", key);
+    keysToRemove.forEach(
+        key -> {
+          userChatContexts.remove(key);
+          log.info("만료된 AI 채팅 세션 정리: {}", key);
+        });
+
+    if (!keysToRemove.isEmpty()) {
+      log.info(
+          "총 {}개의 만료된 AI 채팅 세션 정리됨. 현재 활성 세션: {}", keysToRemove.size(), userChatContexts.size());
     }
   }
 
@@ -129,10 +171,15 @@ public class AiChatServiceImpl implements AiChatService {
             ? PromptTemplate.getAiResponsePrompt(userMessage)
             : PromptTemplate.getAiResponsePromptWithHistory(chatHistory, userMessage);
 
-    GeminiTextResponse response = geminiApiAdapter.generateText(prompt);
-    if (!response.isEmpty()) {
-      return response.getText();
+    try {
+      GeminiTextResponse response = geminiApiAdapter.generateText(prompt);
+      if (response != null && !response.isEmpty()) {
+        return response.getText();
+      }
+    } catch (Exception e) {
+      log.warn("Gemini API 호출 실패, 기본 응답 사용: {}", e.getMessage());
     }
+
     return PromptTemplate.getRandomDefaultResponse();
   }
 
@@ -185,40 +232,25 @@ public class AiChatServiceImpl implements AiChatService {
 
     updateSessionActivity(userMessage.getSenderId(), userMessage.getChatroomId());
 
-    LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-    LocalDateTime todayEnd = LocalDate.now().atTime(LocalTime.MAX);
+    // 1. 기분 조사 답변 처리 (MoodInquiryService에 위임)
+    Optional<String> pendingInquiryId =
+        moodInquiryService.getPendingInquiryId(userMessage.getSenderId());
+    if (pendingInquiryId.isPresent()) {
+      try {
+        UserMoodHistory savedMood =
+            moodInquiryService.saveMoodAnswer(pendingInquiryId.get(), userMessage.getContent());
 
-    List<UserMoodHistory> todayMoodInquiries =
-        moodHistoryRepository.findByUserIdAndCreatedAtBetween(
-            userMessage.getSenderId(), todayStart, todayEnd);
+        log.info(
+            "기분 조사 답변 처리 완료 - 사용자: {}, 기분: {}", userMessage.getSenderId(), savedMood.getMoodType());
 
-    Optional<UserMoodHistory> unansweredInquiry =
-        todayMoodInquiries.stream().filter(inquiry -> inquiry.getUserAnswer() == null).findFirst();
-
-    if (unansweredInquiry.isPresent()) {
-      UserMoodHistory savedMood =
-          moodInquiryService.saveMoodAnswer(
-              unansweredInquiry.get().getInquiryId(), userMessage.getContent());
-
-      if (savedMood != null) {
         return generateMoodFeedbackResponse(userMessage, savedMood);
+      } catch (Exception e) {
+        log.error("기분 조사 답변 처리 실패", e);
+        // 실패해도 일반 AI 응답으로 계속 진행
       }
     }
 
-    Optional<ChatMessage> lastAiMessage = findLastAiMessageInChatroom(userMessage.getChatroomId());
-    if (lastAiMessage.isPresent()
-        && lastAiMessage.get().getMetadata() != null
-        && lastAiMessage.get().getMetadata().containsKey("inquiryId")) {
-
-      String inquiryId = (String) lastAiMessage.get().getMetadata().get("inquiryId");
-      UserMoodHistory savedMood =
-          moodInquiryService.saveMoodAnswer(inquiryId, userMessage.getContent());
-
-      if (savedMood != null) {
-        return generateMoodFeedbackResponse(userMessage, savedMood);
-      }
-    }
-
+    // 2. 일반 AI 응답 생성
     String aiResponse = generateAiResponse(userMessage.getContent(), userMessage.getChatroomId());
 
     ChatMessageRequest aiMessageRequest =

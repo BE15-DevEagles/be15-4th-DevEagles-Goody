@@ -3,6 +3,7 @@ package com.deveagles.be15_deveagles_be.features.chat.command.application.servic
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.request.ChatMessageRequest;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatMessageService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.EmotionAnalysisService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.MoodInquiryService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.PromptTemplate;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatMessage.MessageType;
@@ -13,34 +14,33 @@ import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.C
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.UserMoodHistoryRepository;
 import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.GeminiApiAdapter;
 import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.GeminiApiAdapter.GeminiTextResponse;
-import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.HuggingFaceApiAdapter;
-import com.deveagles.be15_deveagles_be.features.chat.command.infrastructure.adapters.HuggingFaceApiAdapter.EmotionAnalysisResponse;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class MoodInquiryServiceImpl implements MoodInquiryService {
 
   private static final Logger log = LoggerFactory.getLogger(MoodInquiryServiceImpl.class);
   private static final String AI_SENDER_ID = "ai-assistant";
   private static final String AI_SENDER_NAME = "수리 AI";
 
-  private static final ThreadLocal<String> currentInquiryIdContext = new ThreadLocal<>();
-
   private final UserMoodHistoryRepository moodHistoryRepository;
   private final ChatRoomRepository chatRoomRepository;
   private final ChatRoomService chatRoomService;
   private final ChatMessageService chatMessageService;
   private final GeminiApiAdapter geminiApiAdapter;
-  private final HuggingFaceApiAdapter huggingFaceApiAdapter;
+  private final EmotionAnalysisService emotionAnalysisService;
 
   public MoodInquiryServiceImpl(
       UserMoodHistoryRepository moodHistoryRepository,
@@ -48,28 +48,24 @@ public class MoodInquiryServiceImpl implements MoodInquiryService {
       ChatRoomService chatRoomService,
       ChatMessageService chatMessageService,
       GeminiApiAdapter geminiApiAdapter,
-      HuggingFaceApiAdapter huggingFaceApiAdapter) {
+      EmotionAnalysisService emotionAnalysisService) {
     this.moodHistoryRepository = moodHistoryRepository;
     this.chatRoomRepository = chatRoomRepository;
     this.chatRoomService = chatRoomService;
     this.chatMessageService = chatMessageService;
     this.geminiApiAdapter = geminiApiAdapter;
-    this.huggingFaceApiAdapter = huggingFaceApiAdapter;
+    this.emotionAnalysisService = emotionAnalysisService;
   }
 
   @Override
   public UserMoodHistory generateMoodInquiry(String userId) {
-    log.info("사용자 {} 기분 질문 생성", userId);
+    log.info("사용자 {} 기분 질문 생성 시작", userId);
 
-    LocalDateTime todayStart = LocalDate.now().atStartOfDay();
-    LocalDateTime todayEnd = LocalDate.now().atTime(LocalTime.MAX);
-
-    boolean alreadyAskedToday =
-        moodHistoryRepository.existsByUserIdAndCreatedAtBetween(userId, todayStart, todayEnd);
-
-    if (alreadyAskedToday) {
-      log.info("사용자 {}에게 오늘 이미 기분 질문이 전송됨", userId);
-      return null;
+    // 오늘 이미 질문이 있는지확인
+    Optional<UserMoodHistory> todayInquiry = getTodayMoodInquiry(userId);
+    if (todayInquiry.isPresent()) {
+      log.info("사용자 {}에게 오늘 이미 기분 질문이 생성됨: {}", userId, todayInquiry.get().getInquiryId());
+      throw new IllegalStateException("이미 오늘 기분 질문이 생성되었습니다.");
     }
 
     String inquiry = generateMoodQuestion();
@@ -84,44 +80,55 @@ public class MoodInquiryServiceImpl implements MoodInquiryService {
             .createdAt(LocalDateTime.now())
             .build();
 
-    return moodHistoryRepository.save(moodHistory);
+    UserMoodHistory saved = moodHistoryRepository.save(moodHistory);
+    log.info("기분 질문 생성 완료 - 사용자: {}, 질문ID: {}", userId, inquiryId);
+
+    return saved;
   }
 
   @Override
   public UserMoodHistory saveMoodAnswer(String inquiryId, String userAnswer) {
-    try {
-      setCurrentInquiryId(inquiryId);
+    log.info("기분 답변 저장 시작 - 질문ID: {}", inquiryId);
 
-      return moodHistoryRepository
-          .findByInquiryId(inquiryId)
-          .map(
-              moodHistory -> {
-                moodHistory.answer(userAnswer);
+    UserMoodHistory moodHistory =
+        moodHistoryRepository
+            .findByInquiryId(inquiryId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 질문 ID가 존재하지 않습니다: " + inquiryId));
 
-                MoodType detectedMood = analyzeEmotionWithHuggingFace(userAnswer);
-
-                if (moodHistory.getEmotionAnalysis().isEmpty()) {
-                  updateMoodType(moodHistory, detectedMood);
-                }
-
-                return moodHistoryRepository.save(moodHistory);
-              })
-          .orElse(null);
-    } finally {
-      clearCurrentInquiryId();
+    // 이미 답변했는지 확인
+    if (moodHistory.getUserAnswer() != null) {
+      log.warn("이미 답변된 기분 질문 - 질문ID: {}", inquiryId);
+      throw new IllegalStateException("이미 답변된 질문입니다.");
     }
-  }
 
-  private void setCurrentInquiryId(String inquiryId) {
-    currentInquiryIdContext.set(inquiryId);
-  }
+    // 답변 저장
+    moodHistory.answer(userAnswer);
 
-  private void clearCurrentInquiryId() {
-    currentInquiryIdContext.remove();
-  }
+    // 감정 분석 수행
+    try {
+      EmotionAnalysisService.EmotionAnalysisResult analysisResult =
+          emotionAnalysisService.analyzeEmotion(userAnswer);
 
-  private String findInquiryIdFromContext() {
-    return currentInquiryIdContext.get();
+      if (!analysisResult.isEmpty()) {
+        moodHistory.setEmotionAnalysis(analysisResult.getRawJson());
+        moodHistory.updateMoodTypeAndIntensity(
+            analysisResult.getMoodType(), analysisResult.getIntensity());
+
+        log.info(
+            "감정 분석 완료 - 질문ID: {}, 기분: {}, 강도: {}",
+            inquiryId,
+            analysisResult.getMoodType(),
+            analysisResult.getIntensity());
+      }
+    } catch (Exception e) {
+      log.error("감정 분석 실패 - 질문ID: {}", inquiryId, e);
+      // 감정 분석 실패해도 답변은 저장됨
+    }
+
+    UserMoodHistory saved = moodHistoryRepository.save(moodHistory);
+    log.info("기분 답변 저장 완료 - 질문ID: {}, 사용자: {}", inquiryId, saved.getUserId());
+
+    return saved;
   }
 
   @Override
@@ -131,120 +138,96 @@ public class MoodInquiryServiceImpl implements MoodInquiryService {
 
   @Override
   public void sendMoodInquiryToAllUsers() {
-    log.info("현재 로그인한 모든 사용자에게 기분 질문 전송 작업 시작");
+    log.info("모든 사용자에게 기분 질문 전송 작업 시작");
 
-    List<String> usersWithAiChatRooms =
-        chatRoomRepository.findActiveChatRoomsByType(ChatRoomType.AI, 0, 100).getContent().stream()
-            .map(room -> room.getUserId())
-            .distinct()
-            .collect(Collectors.toList());
+    List<String> usersWithAiChatRooms = getActiveAiChatUsers();
+    int successCount = 0;
+    int skipCount = 0;
 
     for (String userId : usersWithAiChatRooms) {
       try {
         UserMoodHistory moodInquiry = generateMoodInquiry(userId);
-        if (moodInquiry != null) {
-          chatRoomRepository
-              .findByTeamIdAndUserIdAndTypeAndDeletedAtIsNull(null, userId, ChatRoomType.AI)
-              .ifPresent(
-                  chatRoom -> {
-                    ChatMessageRequest messageRequest =
-                        ChatMessageRequest.builder()
-                            .chatroomId(chatRoom.getId())
-                            .senderId(AI_SENDER_ID)
-                            .senderName(AI_SENDER_NAME)
-                            .messageType(MessageType.TEXT)
-                            .content(moodInquiry.getInquiry())
-                            .metadata(Map.of("inquiryId", moodInquiry.getInquiryId()))
-                            .build();
-
-                    chatMessageService.sendMessage(messageRequest);
-                    log.info("사용자 {}에게 기분 질문 전송 완료: {}", userId, moodInquiry.getInquiry());
-                  });
-        }
+        sendMoodInquiryMessage(userId, moodInquiry);
+        successCount++;
+      } catch (IllegalStateException e) {
+        log.debug("사용자 {}는 이미 오늘 기분 질문을 받았음", userId);
+        skipCount++;
       } catch (Exception e) {
-        log.error("사용자 {}에게 기분 질문 전송 실패: {}", userId, e.getMessage(), e);
+        log.error("사용자 {}에게 기분 질문 전송 실패", userId, e);
       }
     }
+
+    log.info(
+        "기분 질문 전송 완료 - 성공: {}명, 건너뜀: {}명, 전체: {}명",
+        successCount,
+        skipCount,
+        usersWithAiChatRooms.size());
   }
 
-  public void sendMoodInquiryOnUserLogin(String userId) {
-    log.info("사용자 {} 로그인 감지, 기분 질문 필요성 확인", userId);
+  public Optional<UserMoodHistory> getTodayMoodInquiry(String userId) {
+    LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+    LocalDateTime todayEnd = LocalDate.now().atTime(LocalTime.MAX);
 
-    try {
-      UserMoodHistory moodInquiry = generateMoodInquiry(userId);
-      if (moodInquiry != null) {
-        chatRoomRepository
-            .findByTeamIdAndUserIdAndTypeAndDeletedAtIsNull(null, userId, ChatRoomType.AI)
-            .ifPresent(
-                chatRoom -> {
-                  ChatMessageRequest messageRequest =
-                      ChatMessageRequest.builder()
-                          .chatroomId(chatRoom.getId())
-                          .senderId(AI_SENDER_ID)
-                          .senderName(AI_SENDER_NAME)
-                          .messageType(MessageType.TEXT)
-                          .content(moodInquiry.getInquiry())
-                          .metadata(Map.of("inquiryId", moodInquiry.getInquiryId()))
-                          .build();
+    List<UserMoodHistory> todayInquiries =
+        moodHistoryRepository.findByUserIdAndCreatedAtBetween(userId, todayStart, todayEnd);
 
-                  chatMessageService.sendMessage(messageRequest);
-                  log.info("로그인한 사용자 {}에게 기분 질문 전송: {}", userId, moodInquiry.getInquiry());
-                });
-      }
-    } catch (Exception e) {
-      log.error("로그인한 사용자 {}에게 기분 질문 전송 실패: {}", userId, e.getMessage(), e);
-    }
+    return todayInquiries.stream().findFirst();
+  }
+
+  public Optional<UserMoodHistory> getTodayUnansweredInquiry(String userId) {
+    return getTodayMoodInquiry(userId).filter(inquiry -> inquiry.getUserAnswer() == null);
+  }
+
+  public boolean hasPendingMoodInquiry(String userId) {
+    return getTodayUnansweredInquiry(userId).isPresent();
+  }
+
+  public Optional<String> getPendingInquiryId(String userId) {
+    return getTodayUnansweredInquiry(userId).map(UserMoodHistory::getInquiryId);
   }
 
   private String generateMoodQuestion() {
-    GeminiTextResponse response =
-        geminiApiAdapter.generateText(PromptTemplate.getMoodQuestionPrompt());
-    if (!response.isEmpty()) {
-      return response.getText();
-    }
-    return PromptTemplate.getRandomMoodInquiry();
-  }
-
-  private MoodType analyzeEmotionWithHuggingFace(String answer) {
-    String inquiryId = findInquiryIdFromContext();
-
-    EmotionAnalysisResponse response = huggingFaceApiAdapter.analyzeEmotion(answer);
-
-    if (inquiryId != null && !response.isEmpty()) {
-      moodHistoryRepository
-          .findByInquiryId(inquiryId)
-          .ifPresent(
-              moodHistory -> {
-                moodHistory.setEmotionAnalysis(response.getRawJson());
-                moodHistoryRepository.save(moodHistory);
-                log.info("UserMoodHistory(ID: {})에 감정 분석 결과 저장 완료", moodHistory.getId());
-              });
-    }
-
-    return convertToMoodType(response);
-  }
-
-  private MoodType convertToMoodType(EmotionAnalysisResponse response) {
-    if (response.isEmpty()) {
-      return MoodType.NEUTRAL;
-    }
-
     try {
-      String dominantEmotion = response.getDominantEmotion().toUpperCase();
-      return MoodType.valueOf(dominantEmotion);
-    } catch (IllegalArgumentException e) {
-      log.warn("알 수 없는 감정 라벨: {}, NEUTRAL로 설정됨", response.getDominantEmotion());
-      return MoodType.NEUTRAL;
-    }
-  }
-
-  private void updateMoodType(UserMoodHistory moodHistory, MoodType newMoodType) {
-    try {
-      java.lang.reflect.Field field = UserMoodHistory.class.getDeclaredField("moodType");
-      field.setAccessible(true);
-      field.set(moodHistory, newMoodType);
+      GeminiTextResponse response =
+          geminiApiAdapter.generateText(PromptTemplate.MOOD_INQUIRY_PROMPT);
+      if (!response.isEmpty()) {
+        return response.getText();
+      }
     } catch (Exception e) {
-      log.error("moodType 업데이트 실패", e);
+      log.warn("AI 기분 질문 생성 실패, 기본 질문 사용", e);
     }
+
+    return PromptTemplate.getDefaultMoodQuestion();
+  }
+
+  private List<String> getActiveAiChatUsers() {
+    return chatRoomRepository
+        .findActiveChatRoomsByType(ChatRoomType.AI, 0, 100)
+        .getContent()
+        .stream()
+        .map(room -> room.getUserId())
+        .distinct()
+        .collect(Collectors.toList());
+  }
+
+  private void sendMoodInquiryMessage(String userId, UserMoodHistory moodInquiry) {
+    chatRoomRepository
+        .findByTeamIdAndUserIdAndTypeAndDeletedAtIsNull(null, userId, ChatRoomType.AI)
+        .ifPresent(
+            chatRoom -> {
+              ChatMessageRequest messageRequest =
+                  ChatMessageRequest.builder()
+                      .chatroomId(chatRoom.getId())
+                      .senderId(AI_SENDER_ID)
+                      .senderName(AI_SENDER_NAME)
+                      .messageType(MessageType.TEXT)
+                      .content(moodInquiry.getInquiry())
+                      .metadata(
+                          Map.of("inquiryId", moodInquiry.getInquiryId(), "type", "mood_inquiry"))
+                      .build();
+
+              chatMessageService.sendMessage(messageRequest);
+              log.info("사용자 {}에게 기분 질문 전송 완료: {}", userId, moodInquiry.getInquiry());
+            });
   }
 }
