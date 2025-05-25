@@ -17,7 +17,6 @@
     loading.value = true;
     try {
       const res = await fetchComments(props.worklogId);
-      console.log(res);
       comments.value = res.data.data;
     } catch (error) {
       console.error('댓글 조회 실패:', error);
