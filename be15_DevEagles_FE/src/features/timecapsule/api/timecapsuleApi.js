@@ -13,3 +13,13 @@ export async function createTimecapsule({ timecapsuleContent, openDate, teamId }
     throw error;
   }
 }
+
+export async function fetchOpenTeamTimecapsules(teamId) {
+  try {
+    const res = await api.get(`/timecapsules/team/${teamId}/open`);
+    return res.data.data || [];
+  } catch (error) {
+    console.error('타임캡슐 오픈 목록 조회 실패:', error);
+    return [];
+  }
+}
