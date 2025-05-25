@@ -2,6 +2,7 @@ package com.deveagles.be15_deveagles_be.features.team.command.application.servic
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.request.CreateTeamRequest;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.response.CreateTeamResponse;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.response.TeamResponse;
@@ -19,6 +20,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +34,9 @@ public class TeamCommandServiceImpl implements TeamCommandService {
   private final TeamRepository teamRepository;
   private final UserRepository userRepository;
   private final TeamMemberRepository teamMemberRepository;
+  private final ChatRoomService chatRoomService;
   private final AmazonS3 amazonS3;
+  private static final Logger log = LoggerFactory.getLogger(TeamCommandServiceImpl.class);
 
   @Value("${cloud.aws.s3.bucket}")
   private String bucket;
@@ -58,10 +63,7 @@ public class TeamCommandServiceImpl implements TeamCommandService {
     User teamLeader =
         userRepository
             .findById(userId)
-            .orElseThrow(
-                () ->
-                    new TeamBusinessException(
-                        TeamErrorCode.USER_NOT_FOUND)); // 보통 존재한다고 가정되지만 안정성 위해 체크
+            .orElseThrow(() -> new TeamBusinessException(TeamErrorCode.USER_NOT_FOUND));
 
     TeamMember teamMember =
         TeamMember.builder()
@@ -72,7 +74,28 @@ public class TeamCommandServiceImpl implements TeamCommandService {
 
     teamMemberRepository.save(teamMember);
 
-    // 4. 응답 반환
+    // 4. 팀 기본 채팅방 생성
+    try {
+      log.info("팀 기본 채팅방 생성 시작 - 팀ID: {}, 팀명: {}", saved.getTeamId(), saved.getTeamName());
+
+      var chatRoom =
+          chatRoomService.createDefaultChatRoom(
+              String.valueOf(saved.getTeamId()), saved.getTeamName() + " 전체 채팅방");
+
+      log.info("팀 기본 채팅방 생성 완료 - 채팅방ID: {}", chatRoom.getId());
+
+      // 팀장을 기본 채팅방에 추가
+      log.info("팀장을 기본 채팅방에 추가 시작 - 사용자ID: {}, 채팅방ID: {}", userId, chatRoom.getId());
+
+      chatRoomService.addParticipantToChatRoom(chatRoom.getId(), String.valueOf(userId));
+
+      log.info("팀장을 기본 채팅방에 추가 완료");
+
+    } catch (Exception e) {
+      log.error("팀 기본 채팅방 생성 실패 - 팀ID: {}, 에러: {}", saved.getTeamId(), e.getMessage(), e);
+    }
+
+    // 5. 응답 반환
     return CreateTeamResponse.builder()
         .teamId(saved.getTeamId())
         .teamName(saved.getTeamName())

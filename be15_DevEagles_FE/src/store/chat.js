@@ -99,7 +99,7 @@ export const useChatStore = defineStore('chat', {
             const teamMembers = [];
 
             this.chats = aiChatRooms.map(room =>
-              transformChatRoom(room, authStore.userId, teamMembers)
+              transformChatRoom(room, authStore.userId, teamMembers, null)
             );
 
             console.log('[loadChatRooms] AI 채팅방만 로드 완료:', {
@@ -124,12 +124,12 @@ export const useChatStore = defineStore('chat', {
 
           // 팀 채팅방 변환
           const transformedTeamChats = teamChatRooms.map(room =>
-            transformChatRoom(room, authStore.userId, teamMembers)
+            transformChatRoom(room, authStore.userId, teamMembers, teamStore.currentTeam)
           );
 
           // AI 채팅방 변환
           const transformedAiChats = (aiChatRooms || []).map(room =>
-            transformChatRoom(room, authStore.userId, teamMembers)
+            transformChatRoom(room, authStore.userId, teamMembers, teamStore.currentTeam)
           );
 
           // AI 채팅방을 맨 앞에 배치하고 팀 채팅방을 뒤에 배치
@@ -165,7 +165,7 @@ export const useChatStore = defineStore('chat', {
           const teamMembers = teamStore.teamMembers || [];
 
           this.chats = (aiChatRooms || []).map(room =>
-            transformChatRoom(room, authStore.userId, teamMembers)
+            transformChatRoom(room, authStore.userId, teamMembers, teamStore.currentTeam)
           );
 
           console.log('[loadChatRooms] AI 채팅방만 로드 완료 (팀 채팅방 없음):', {
@@ -451,7 +451,12 @@ export const useChatStore = defineStore('chat', {
       if (response.success) {
         const newRoom = response.data;
         const teamMembers = teamStore.teamMembers || [];
-        const transformedRoom = transformChatRoom(newRoom, authStore.userId, teamMembers);
+        const transformedRoom = transformChatRoom(
+          newRoom,
+          authStore.userId,
+          teamMembers,
+          teamStore.currentTeam
+        );
         this.chats.unshift(transformedRoom);
 
         // 새 채팅방에 대한 전역 구독 추가
@@ -550,7 +555,7 @@ export const useChatStore = defineStore('chat', {
         console.log('[chatStore] 채팅방 목록 조회 완료:', chatRooms);
 
         this.chats = chatRooms.map(room => {
-          const transformedChat = transformChatRoom(room);
+          const transformedChat = transformChatRoom(room, null, [], null);
 
           // unreadCount가 있으면 사용, 없으면 0으로 설정
           transformedChat.unreadCount = room.unreadCount || 0;
