@@ -92,8 +92,19 @@ function connectWebSocket() {
     url: wsUrl,
   });
 
+  // JWT 토큰 가져오기
+  const token = localStorage.getItem('accessToken');
+  const connectHeaders = {};
+
+  if (token) {
+    connectHeaders['Authorization'] = `Bearer ${token}`;
+    console.log('웹소켓 연결에 JWT 토큰 포함');
+  } else {
+    console.warn('JWT 토큰이 없어 웹소켓 인증 없이 연결');
+  }
+
   stompClient.connect(
-    {}, // 헤더 없이 연결
+    connectHeaders,
     () => {
       console.log('웹소켓 연결 성공');
       reconnectAttempts = 0;
@@ -105,7 +116,9 @@ function connectWebSocket() {
       subscriptions = {};
       Object.keys(currentSubscriptions).forEach(destination => {
         const callback = currentSubscriptions[destination].callback;
-        if (destination.includes('.read')) {
+        if (destination === 'user.status') {
+          subscribeToUserStatus(callback);
+        } else if (destination.includes('.read')) {
           const chatRoomId = destination.split('.')[1];
           subscribeToReadStatus(chatRoomId, callback);
         } else {
@@ -243,12 +256,17 @@ export function sendWebSocketMessage(chatRoomId, message, userId, userName) {
     const messageData = {
       chatroomId: chatRoomId,
       content: message,
-      senderId: userId,
-      senderName: userName,
+      senderId: String(userId),
+      senderName: userName || '알 수 없는 사용자',
       messageType: 'TEXT',
     };
 
-    console.log('[webSocketService] 메시지 전송:', messageData.content?.substring(0, 30));
+    console.log('[webSocketService] 메시지 전송:', {
+      content: messageData.content?.substring(0, 30),
+      senderId: messageData.senderId,
+      senderName: messageData.senderName,
+      chatroomId: messageData.chatroomId,
+    });
 
     stompClient.send(`/app/chat.send`, {}, JSON.stringify(messageData));
     return true;
@@ -348,4 +366,36 @@ export function forceReconnect() {
   setTimeout(() => {
     initializeWebSocket();
   }, 1000);
+}
+
+export function subscribeToUserStatus(callback) {
+  if (!stompClient || !stompClient.connected) {
+    console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
+    initializeWebSocket();
+    // 웹소켓 연결이 완료될 때까지 구독 정보 저장
+    subscriptions['user.status'] = { callback };
+    setTimeout(() => subscribeToUserStatus(callback), 1000);
+    return;
+  }
+
+  const destination = '/topic/status';
+
+  if (subscriptions['user.status']) {
+    unsubscribe('user.status');
+  }
+
+  subscriptions['user.status'] = {
+    subscription: stompClient.subscribe(destination, message => {
+      try {
+        const statusMessage = JSON.parse(message.body);
+        console.log('[webSocketService] 사용자 상태 변경:', statusMessage);
+        callback(statusMessage);
+      } catch (error) {
+        console.error('사용자 상태 메시지 처리 중 오류 발생:', error);
+      }
+    }),
+    callback,
+  };
+
+  console.log(`[webSocketService] 사용자 상태 구독 완료: ${destination}`);
 }

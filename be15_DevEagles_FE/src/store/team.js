@@ -55,6 +55,16 @@ export const useTeamStore = defineStore('team', {
         console.log('📦 멤버 API 응답 (감정 포함):', memberRes.data.data);
 
         localStorage.setItem('lastSelectedTeam', teamId);
+
+        // 팀 변경 후 채팅방 목록 새로고침
+        try {
+          const { useChatStore } = await import('./chat');
+          const chatStore = useChatStore();
+          await chatStore.loadChatRooms();
+          console.log('[setCurrentTeam] 채팅방 목록 새로고침 완료');
+        } catch (chatError) {
+          console.warn('[setCurrentTeam] 채팅방 목록 새로고침 실패:', chatError);
+        }
       } catch (err) {
         this.error = err.message;
         console.error('팀 설정 실패:', err);

@@ -8,7 +8,7 @@
 
     <div class="overflow-y-auto h-full" style="height: calc(100% - 49px)">
       <div
-        v-for="(member, idx) in teamMembers"
+        v-for="(member, idx) in teamMembersWithStatus"
         :key="member.userId || idx"
         class="p-3 border-b border-[var(--color-gray-200)] hover:bg-[var(--color-gray-100)] transition-colors"
       >
@@ -33,9 +33,7 @@
             </div>
             <div
               class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
-              :class="
-                member.isOnline ? 'bg-[var(--color-success-300)]' : 'bg-[var(--color-gray-400)]'
-              "
+              :class="member.isOnline ? 'bg-green-500' : 'bg-gray-400'"
             ></div>
           </div>
 
@@ -132,10 +130,12 @@
 </template>
 
 <script setup>
-  import { defineProps, defineEmits, watch } from 'vue';
+  import { defineProps, defineEmits, watch, computed } from 'vue';
   import { useAuthStore } from '@/store/auth';
+  import { useUserStatusStore } from '@/store/userStatus';
 
   const authStore = useAuthStore();
+  const userStatusStore = useUserStatusStore();
 
   /**
    * Props:
@@ -158,6 +158,14 @@
       type: Array,
       required: true,
     },
+  });
+
+  // 실제 온라인 상태를 반영한 팀원 목록
+  const teamMembersWithStatus = computed(() => {
+    return props.teamMembers.map(member => ({
+      ...member,
+      isOnline: userStatusStore.isUserOnline(member.userId),
+    }));
   });
 
   // 감정 타입별 아이콘 매핑
