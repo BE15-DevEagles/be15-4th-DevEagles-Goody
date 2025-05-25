@@ -32,7 +32,7 @@
     <BaseModal v-model="showConfirm" title="타임캡슐 생성 확인">
       <template #default> 타임캡슐을 저장하시겠습니까? </template>
       <template #footer>
-        <BaseButton @click="showConfirm = false">취소</BaseButton>
+        <BaseButton type="error" @click="showConfirm = false">취소</BaseButton>
         <BaseButton type="primary" @click="onSubmitConfirm">확인</BaseButton>
       </template>
     </BaseModal>
@@ -78,9 +78,10 @@
         ...form.value,
         teamId: teamId.value,
       });
+      // 페이지 전체 새로고침(폼 완전 초기화)
       window.location.reload();
     } catch (e) {
-      // 에러 핸들링 필요시 여기에 추가
+      console.error('타임캡슐 생성 중 에러:', e);
     }
   }
 </script>
