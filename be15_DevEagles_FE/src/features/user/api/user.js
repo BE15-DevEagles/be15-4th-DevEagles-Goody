@@ -10,7 +10,10 @@ const exceptToken = [
   { method: 'post', url: '/auth/login' },
   { method: 'post', url: '/users$' },
   { method: 'post', url: '/users/duplcheck' },
+  { method: 'patch', url: '/users/email/pwd' },
   { method: 'post', url: '/auth/sendauth' },
+  { method: 'post', url: '/auth/findid' },
+  { method: 'post', url: '/auth/findpwd' },
   { method: 'post', url: '/auth/verify' },
 ];
 
@@ -41,6 +44,10 @@ export const logout = () => api.post(`/auth/logout`);
 export const validUserStatus = () => api.post(`/auth/valid`);
 
 export const findUserId = params => api.post(`/auth/findid`, params);
+
+export const findUserPwd = params => api.post(`/auth/findpwd`, params);
+
+export const emailEditPassword = params => api.patch(`/users/email/pwd`, params);
 
 export const sendAuth = params => api.post(`/auth/sendauth`, params);
 

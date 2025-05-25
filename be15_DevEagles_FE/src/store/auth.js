@@ -63,6 +63,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function updateAuth(up) {
+    name.value = up.name;
+    userThumbnailUrl.value = up.thumbnail;
+  }
+
   return {
     accessToken,
     userId,
@@ -74,5 +79,6 @@ export const useAuthStore = defineStore('auth', () => {
     setAuth,
     clearAuth,
     initAuth,
+    updateAuth,
   };
 });

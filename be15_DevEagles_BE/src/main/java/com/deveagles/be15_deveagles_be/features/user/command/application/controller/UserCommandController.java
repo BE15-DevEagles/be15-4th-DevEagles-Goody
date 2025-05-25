@@ -2,10 +2,7 @@ package com.deveagles.be15_deveagles_be.features.user.command.application.contro
 
 import com.deveagles.be15_deveagles_be.common.dto.ApiResponse;
 import com.deveagles.be15_deveagles_be.features.auth.command.application.model.CustomUser;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserDuplRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserPasswordRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
+import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.*;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
 import com.deveagles.be15_deveagles_be.features.user.command.application.service.UserCommandService;
 import com.deveagles.be15_deveagles_be.features.user.command.domain.aggregate.User;
@@ -100,6 +97,15 @@ public class UserCommandController {
         userCommandService.updateUserPassword(customUser.getUserId(), request.password());
 
     return ResponseEntity.ok().body(ApiResponse.success(response));
+  }
+
+  @PatchMapping("/users/email/pwd")
+  public ResponseEntity<ApiResponse<Void>> updateUserPasswordFromEmail(
+      @RequestBody @Valid UserEmailPasswordRequest request) {
+
+    userCommandService.updateUserPasswordFromEmail(request);
+
+    return ResponseEntity.ok().body(ApiResponse.success(null));
   }
 
   @DeleteMapping("/users")
