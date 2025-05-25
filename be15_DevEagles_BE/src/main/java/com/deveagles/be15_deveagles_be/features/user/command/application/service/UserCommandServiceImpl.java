@@ -3,6 +3,7 @@ package com.deveagles.be15_deveagles_be.features.user.command.application.servic
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
+import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserEmailPasswordRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
 import com.deveagles.be15_deveagles_be.features.user.command.domain.aggregate.User;
@@ -82,6 +83,8 @@ public class UserCommandServiceImpl implements UserCommandService {
     if (profile != null && !profile.isEmpty()) {
       String profileUrl = saveProfile(profile);
       user.setProfile(profileUrl);
+    } else {
+      user.setProfile(null);
     }
 
     return buildUserDetailResponse(userRepository.save(user));
@@ -106,6 +109,17 @@ public class UserCommandServiceImpl implements UserCommandService {
     user.setEncodedPassword(passwordEncoder.encode(newPassword));
 
     return buildUserDetailResponse(userRepository.save(user));
+  }
+
+  @Override
+  @Transactional
+  public void updateUserPasswordFromEmail(UserEmailPasswordRequest request) {
+
+    Optional<User> user = userRepository.findUserByEmail(request.email());
+
+    if (user.isEmpty()) throw new UserBusinessException(UserErrorCode.NOT_FOUND_USER_EXCEPTION);
+
+    user.get().setEncodedPassword(passwordEncoder.encode(request.password()));
   }
 
   @Override

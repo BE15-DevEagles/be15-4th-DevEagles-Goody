@@ -1,7 +1,7 @@
 <template>
   <div class="password-edit-view">
-    <h1 class="page-title">비밀번호 변경</h1>
-    <PasswordEditForm :redirect-path="'/mypage'" :on-cancel="handleCancel" />
+    <h1 class="page-title">비밀번호 재설정</h1>
+    <PasswordEditForm :redirect-path="'/login'" :on-cancel="handleCancel" />
   </div>
 </template>
 
@@ -9,7 +9,7 @@
   import { useRouter } from 'vue-router';
   import PasswordEditForm from '@/features/user/components/PasswordEditForm.vue';
   const router = useRouter();
-  const handleCancel = () => router.back();
+  const handleCancel = () => router.push('/login');
 </script>
 
 <style scoped>

@@ -1,6 +1,6 @@
 <template>
-  <BaseModal v-model="showModal" title="아이디찾기">
-    <p class="modal-description">회원정보에 등록된 이름과 전화번호를 입력해주세요.</p>
+  <BaseModal v-model="showModal" title="비밀번호 찾기">
+    <p class="modal-description">가입하신 이름과 이메일주소를 입력해주세요.</p>
 
     <div class="form-container">
       <div class="form-row">
@@ -11,16 +11,16 @@
       </div>
 
       <div class="form-row">
-        <label class="form-label">전화번호</label>
+        <label class="form-label">이메일</label>
         <div class="form-input">
-          <BaseInput v-model="phoneNumber" placeholder="전화번호를 입력해주세요" />
+          <BaseInput v-model="email" placeholder="이메일을 입력해주세요" />
         </div>
       </div>
     </div>
 
     <template #footer>
       <div class="footer-center">
-        <BaseButton type="primary" @click="handleSubmit">인증하기</BaseButton>
+        <BaseButton type="primary" @click="handleSubmit">인증 메일 전송</BaseButton>
       </div>
     </template>
   </BaseModal>
@@ -41,12 +41,10 @@
   });
 
   const userName = ref('');
-  const phoneNumber = ref('');
+  const email = ref('');
 
   const handleSubmit = () => {
-    emit('submit', { userName: userName.value, phoneNumber: phoneNumber.value });
-    userName.value = '';
-    phoneNumber.value = '';
+    emit('submit', { userName: userName.value, email: email.value });
   };
 </script>
 

@@ -8,11 +8,13 @@ import com.deveagles.be15_deveagles_be.features.comment.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.comment.command.application.service.CommentService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/comments")
@@ -43,6 +45,7 @@ public class CommentCommandController {
       @PathVariable Long commentId,
       @RequestBody CommentUpdateRequest request,
       @AuthenticationPrincipal CustomUser customUser) {
+
     Long userId = customUser.getUserId();
     commentService.updateComment(commentId, request, userId);
     return ResponseEntity.ok().build();

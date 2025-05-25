@@ -1,6 +1,7 @@
 package com.deveagles.be15_deveagles_be.features.user.command.application.service;
 
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
+import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserEmailPasswordRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
 import jakarta.validation.Valid;
@@ -20,4 +21,6 @@ public interface UserCommandService {
   UserDetailResponse updateUserPassword(Long userId, String newPassword);
 
   void withDrawUser(Long userId);
+
+  void updateUserPasswordFromEmail(UserEmailPasswordRequest request);
 }

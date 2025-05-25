@@ -29,8 +29,10 @@
   import { mypage, updateUserInfo } from '@/features/user/api/user.js';
   import BaseButton from '@/components/common/components/BaseButton.vue';
   import BaseModal from '@/components/common/components/BaseModal.vue';
+  import { useAuthStore } from '@/store/auth.js';
 
   const router = useRouter();
+  const authStore = useAuthStore();
 
   const user = reactive({
     userName: '',
@@ -73,7 +75,6 @@
   };
 
   const handleUserChange = payload => {
-    console.log('[변경된 사용자 정보]', payload);
     Object.assign(user, payload);
     errors.userName = '';
     errors.phoneNumber = '';
@@ -123,10 +124,6 @@
       return;
     }
 
-    const isUnchanged =
-      user.userName === originalUser.userName &&
-      removeHyphenPhone(user.phoneNumber) === originalUser.phoneNumber;
-
     try {
       const formData = new FormData();
       const requestPayload = {
@@ -142,10 +139,21 @@
       );
 
       if (user.profileImage instanceof File) {
+        // 새 이미지 선택된 경우
         formData.append('profile', user.profileImage);
+      } else {
+        // 이미지 제거한 경우: 서버가 MultipartFile null 로 인식할 수 있도록
+        formData.append('profile', new Blob([], { type: 'application/octet-stream' }), '');
       }
-      await updateUserInfo(formData);
+
+      const res = await updateUserInfo(formData);
+      const result = res.data.data;
+      console.log(res);
       isSuccessModalOpen.value = true;
+      authStore.updateAuth({
+        name: requestPayload.userName,
+        thumbnail: result.thumbnailUrl,
+      });
     } catch (e) {
       console.error('[업데이트 오류]', e);
     }
