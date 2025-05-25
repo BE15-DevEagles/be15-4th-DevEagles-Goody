@@ -11,10 +11,17 @@ public class PageRequestUtil {
   private static final String DEFAULT_SORT_BY = "writtenAt"; // 예시 정렬 기준
   private static final Sort.Direction DEFAULT_DIRECTION = Sort.Direction.DESC;
 
-  public static Pageable createPageRequest(Integer page, Integer size) {
+  public static Pageable createPageRequest(Integer page, Integer size, String sortOption) {
     int pageNumber = (page == null || page < 1) ? DEFAULT_PAGE : page - 1;
     int pageSize = (size == null || size < 1) ? DEFAULT_SIZE : size;
 
-    return PageRequest.of(pageNumber, pageSize, Sort.by(DEFAULT_DIRECTION, DEFAULT_SORT_BY));
+    String sortBy = "writtenAt";
+    Sort.Direction direction = DEFAULT_DIRECTION; // 기본은 내림차순
+
+    if ("created".equalsIgnoreCase(sortOption)) {
+      direction = Sort.Direction.ASC; // 방향만 오름차순
+    }
+
+    return PageRequest.of(pageNumber, pageSize, Sort.by(direction, sortBy));
   }
 }

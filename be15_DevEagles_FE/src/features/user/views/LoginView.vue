@@ -1,6 +1,6 @@
 <template>
   <div class="login-container input-reset-scope">
-    <div :class="['login-box', { shake }]">
+    <form :class="['login-box', { shake }]" @submit.prevent="fetchUser">
       <img :src="Logo" alt="로고" class="logo" />
 
       <BaseInput
@@ -20,16 +20,16 @@
       />
 
       <div class="login-links">
-        <a href="#">아이디 찾기</a>
+        <a href="#" @click.prevent="showFindIdModal = true">아이디 찾기</a>
         <span>|</span>
-        <a href="#">비밀번호 찾기</a>
+        <a href="#" @click.prevent="showFindPwdModal = true">비밀번호 찾기</a>
       </div>
 
       <div class="login-buttons">
-        <BaseButton @click="goToSignup">회원가입</BaseButton>
-        <BaseButton type="primary" @click="fetchUser">로그인</BaseButton>
+        <a class="btn btn-primary" @click.prevent="goToSignup">회원가입</a>
+        <button class="btn btn-primary" type="submit">로그인</button>
       </div>
-    </div>
+    </form>
   </div>
   <BaseModal v-model="showVerifyModal" title="미인증 회원">
     <p class="modal-text">
@@ -44,6 +44,56 @@
       </div>
     </template>
   </BaseModal>
+
+  <BaseModal v-model="showRecoverModal" title="Welcome back🎉">
+    <div class="modal-body center-content">계정이 복구되었습니다.</div>
+    <template #footer>
+      <BaseButton type="primary" @click="router.push('/')">확인</BaseButton>
+    </template>
+  </BaseModal>
+
+  <FindIdModal v-model="showFindIdModal" @submit="onFindIdSubmit" />
+  <FindPwdModal v-model="showFindPwdModal" @submit="onFindPwdSubmit" />
+
+  <BaseModal v-model="showFindIdResModal" title="">
+    <div class="modal-body center-content">
+      <template v-if="isFoundId">
+        <p>
+          <strong>회원님의 아이디는</strong><br />
+          {{ foundUserId }} <strong>입니다.</strong>
+        </p>
+      </template>
+      <template v-else>
+        <p>
+          존재하지 않는 회원정보입니다.<br />
+          확인 후 다시 입력해주세요.
+        </p>
+      </template>
+    </div>
+    <template #footer>
+      <BaseButton type="primary" @click="showFindIdResModal = false">확인</BaseButton>
+    </template>
+  </BaseModal>
+
+  <BaseModal v-model="showFindPwdResModal" title="">
+    <div class="modal-body center-content">
+      <template v-if="isFoundPwd">
+        <p>
+          비밀번호 변경을 위한 인증 메일이 전송되었습니다.<br />
+          인증 완료 후 비밀번호를 변경해주세요.
+        </p>
+      </template>
+      <template v-else>
+        <p>
+          존재하지 않는 회원정보입니다.<br />
+          확인 후 다시 입력해주세요.
+        </p>
+      </template>
+    </div>
+    <template #footer>
+      <BaseButton type="primary" @click="showFindIdResModal = false">확인</BaseButton>
+    </template>
+  </BaseModal>
 </template>
 
 <script setup>
@@ -52,10 +102,18 @@
   import BaseInput from '@/components/common/components/BaseForm.vue';
   import BaseButton from '@/components/common/components/BaseButton.vue';
   import { useAuthStore } from '@/store/auth.js';
-  import { login, validUserStatus } from '@/features/user/api/user.js';
+  import {
+    findUserId,
+    findUserPwd,
+    login,
+    sendAuth,
+    validUserStatus,
+  } from '@/features/user/api/user.js';
   import Logo from '/assets/image/logo-goody-with-text.png';
   import BaseModal from '@/components/common/components/BaseModal.vue';
   import { setupChat } from '@/features/chat/config/chatConfig.js';
+  import FindIdModal from '@/features/user/components/FindIdModal.vue';
+  import FindPwdModal from '@/features/user/components/FindPwdModal.vue';
 
   const router = useRouter();
   const authStore = useAuthStore();
@@ -67,13 +125,53 @@
   const errorMessage = ref('');
   const shake = ref(false); // 🔥 shake 트리거
   const showVerifyModal = ref(false);
+  const showRecoverModal = ref(false);
+  const showFindIdModal = ref(false);
+  const showFindPwdModal = ref(false);
+  const showFindIdResModal = ref(false);
+  const showFindPwdResModal = ref(false);
+
+  const isFoundId = ref(false);
+  const foundUserId = ref('');
+
+  const onFindIdSubmit = async ({ userName, phoneNumber }) => {
+    try {
+      const res = await findUserId({ userName, phoneNumber });
+      showFindIdModal.value = false;
+      if (res.data.success && res.data.data) {
+        foundUserId.value = res.data.data.email;
+        isFoundId.value = true;
+      } else {
+        isFoundId.value = false;
+      }
+      showFindIdResModal.value = true;
+    } catch (e) {
+      console.error(e);
+      isFoundId.value = false;
+      showFindIdResModal.value = true;
+    }
+  };
+
+  const isFoundPwd = ref(false);
+
+  const onFindPwdSubmit = async ({ userName, email }) => {
+    try {
+      await findUserPwd({ userName, email });
+      showFindPwdModal.value = false;
+      isFoundPwd.value = true;
+    } catch (e) {
+      console.error(e);
+      isFoundPwd.value = false;
+    } finally {
+      showFindPwdResModal.value = true;
+    }
+  };
 
   const fetchUser = async () => {
     try {
       const res = await login(params.value);
 
       authStore.setAuth(res.data.data.accessToken);
-
       localStorage.setItem('refreshToken', res.data.data.refreshToken);
 
       const res_valid = await validUserStatus();
@@ -83,6 +181,8 @@
         showVerifyModal.value = true;
         return;
       }
+
+      if (authStore.returnUser === 'true') showRecoverModal.value(true);
 
       // 로그인 성공 후 채팅 초기화
       setTimeout(() => {
@@ -100,7 +200,10 @@
     }
   };
 
-  const goVerifyEmail = () => {};
+  const goVerifyEmail = async () => {
+    showVerifyModal.value = false;
+    await sendAuth({ email: params.value.username });
+  };
 
   const goToSignup = () => {
     router.push('/signup');

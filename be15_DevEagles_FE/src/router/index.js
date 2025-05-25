@@ -45,7 +45,7 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
 
-  const publicPages = ['/login', '/signup', '/email-verify']; // 인증 없이 접근 가능한 경로들
+  const publicPages = ['/login', '/signup', '/email-verify', '/email-pwd', '/findpwd']; // 인증 없이 접근 가능한 경로들
   const authRequired = !publicPages.includes(to.path);
 
   // 인증이 필요한 페이지인데 로그인 안 했으면 로그인으로 이동

@@ -65,11 +65,11 @@
       <div class="flex items-center gap-2">
         <button
           :disabled="notificationLoading"
-          class="p-2 rounded-md transition-colors"
+          class="p-2 rounded-lg transition-all duration-200 relative"
           :class="[
             isNotificationEnabled
-              ? 'text-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]'
-              : 'text-[var(--color-gray-400)] hover:bg-[var(--color-gray-100)]',
+              ? 'text-[var(--color-primary-main)] bg-[var(--color-primary-50)] hover:bg-[var(--color-primary-100)] shadow-sm'
+              : 'text-[var(--color-gray-500)] bg-[var(--color-gray-100)] hover:bg-[var(--color-gray-200)]',
             notificationLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
           ]"
           :title="
@@ -81,33 +81,41 @@
           "
           @click="toggleNotifications"
         >
+          <!-- 알림 켜짐 상태 -->
           <svg
-            v-if="!notificationLoading"
+            v-if="!notificationLoading && isNotificationEnabled"
             xmlns="http://www.w3.org/2000/svg"
-            class="h-5 w-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+            class="h-4 w-4"
+            fill="currentColor"
+            viewBox="0 0 20 20"
           >
             <path
-              v-if="isNotificationEnabled"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-            <path
-              v-else
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M5.586 15H4l1.405-1.405A2.032 2.032 0 006 12.158V11a6.002 6.002 0 014-5.659V5a2 2 0 114 0v.341C16.67 6.165 18 8.388 18 11v1.159c0 .538.214 1.055.595 1.436L20 15h-1.586M9 18v-1a3 3 0 116 0v1M9 18H6m9-3l-6-6"
+              d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
             />
           </svg>
+
+          <!-- 알림 꺼짐 상태 -->
+          <div v-else-if="!notificationLoading && !isNotificationEnabled" class="relative">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+              />
+            </svg>
+            <!-- 슬래시 표시 -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="w-5 h-0.5 bg-current transform rotate-45"></div>
+            </div>
+          </div>
+
           <!-- 로딩 스피너 -->
           <svg
             v-else
-            class="animate-spin h-5 w-5"
+            class="animate-spin h-4 w-4"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
@@ -463,7 +471,7 @@
   } = useChatInfiniteScroll(infiniteScrollCallback);
 
   // 디바운스 설정
-  const { debouncedFn: debouncedMarkAsRead } = useDebounce(markLatestMessageAsRead, 500);
+  const { debouncedFn: debouncedMarkAsRead } = useDebounce(markMessageAsRead, 500);
 
   // 계산된 속성
   const isNotificationEnabled = computed(() => {
@@ -517,8 +525,6 @@
     await initializeChat(props.chat?.id, {
       loadChatHistory,
       setMessages,
-      subscribeToChat: chatId =>
-        subscribeToChat(chatId, onIncomingMessage, handleReadStatusMessage),
       markChatAsRead,
       clearError,
       onReady: async () => {

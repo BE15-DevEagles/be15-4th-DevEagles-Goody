@@ -42,7 +42,8 @@ public class WorklogSearchQueryServiceImpl implements WorklogSearchQueryService 
             request.getStartDate(),
             request.getEndDate(),
             offset,
-            size);
+            size,
+            request.getSort());
 
     // 총 개수 조회
     int totalCount =

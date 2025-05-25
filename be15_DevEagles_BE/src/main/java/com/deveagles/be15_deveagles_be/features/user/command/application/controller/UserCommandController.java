@@ -2,10 +2,7 @@ package com.deveagles.be15_deveagles_be.features.user.command.application.contro
 
 import com.deveagles.be15_deveagles_be.common.dto.ApiResponse;
 import com.deveagles.be15_deveagles_be.features.auth.command.application.model.CustomUser;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserDuplRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserPasswordRequest;
-import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
+import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.*;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
 import com.deveagles.be15_deveagles_be.features.user.command.application.service.UserCommandService;
 import com.deveagles.be15_deveagles_be.features.user.command.domain.aggregate.User;
@@ -16,7 +13,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -93,6 +97,15 @@ public class UserCommandController {
         userCommandService.updateUserPassword(customUser.getUserId(), request.password());
 
     return ResponseEntity.ok().body(ApiResponse.success(response));
+  }
+
+  @PatchMapping("/users/email/pwd")
+  public ResponseEntity<ApiResponse<Void>> updateUserPasswordFromEmail(
+      @RequestBody @Valid UserEmailPasswordRequest request) {
+
+    userCommandService.updateUserPasswordFromEmail(request);
+
+    return ResponseEntity.ok().body(ApiResponse.success(null));
   }
 
   @DeleteMapping("/users")

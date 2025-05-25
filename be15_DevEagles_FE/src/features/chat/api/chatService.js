@@ -1,5 +1,6 @@
 import api from '@/api/axios';
 import { sendWebSocketMessage, initializeWebSocket } from './webSocketService';
+import { createOrGetAiChatRoom } from './aiChatService';
 import { useAuthStore } from '@/store/auth.js';
 
 export async function getChatRooms() {
@@ -8,6 +9,36 @@ export async function getChatRooms() {
     return response.data.data.chatrooms;
   } catch (error) {
     console.error('채팅방 목록 조회 실패:', error);
+    throw error;
+  }
+}
+
+export async function createChatRoom(request) {
+  try {
+    console.log('[chatService] 채팅방 생성 요청:', request);
+    console.log('[chatService] JSON 직렬화 테스트:', JSON.stringify(request));
+
+    // axios를 다시 사용하되 더 명시적으로 설정
+    const response = await api.post('/chatrooms', request, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      transformRequest: [
+        function (data) {
+          return JSON.stringify(data);
+        },
+      ],
+    });
+
+    console.log('[chatService] 채팅방 생성 응답:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('채팅방 생성 실패:', error);
+    console.error('요청 데이터:', request);
+    if (error.response) {
+      console.error('응답 데이터:', error.response.data);
+      console.error('요청 설정:', error.config);
+    }
     throw error;
   }
 }
@@ -136,19 +167,5 @@ export function initializeChat() {
   }
 }
 
-// AI 채팅방 생성 또는 가져오기
-export async function createOrGetAiChatRoom(userId, aiName = '수리AI') {
-  try {
-    const response = await api.post('/chatrooms/ai', null, {
-      params: {
-        teamId: null, // AI 채팅방은 팀과 무관
-        userId,
-        name: aiName,
-      },
-    });
-    return response.data.data;
-  } catch (error) {
-    console.error('AI 채팅방 생성 실패:', error);
-    throw error;
-  }
-}
+// AI 채팅방 생성 또는 가져오기 - aiChatService에서 import
+export { createOrGetAiChatRoom };

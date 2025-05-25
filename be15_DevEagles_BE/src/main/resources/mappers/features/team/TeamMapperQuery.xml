@@ -23,7 +23,9 @@
             u.user_id,
             u.user_name AS nickname,
             u.email,
-            u.user_thumbnail_url AS profileImageUrl
+            u.user_thumbnail_url AS profileImageUrl,
+            NULL AS latestMoodType,
+            NULL AS latestMoodIntensity
         FROM team_member tm
                  JOIN user u ON tm.user_id = u.user_id
         WHERE tm.team_id = #{teamId}

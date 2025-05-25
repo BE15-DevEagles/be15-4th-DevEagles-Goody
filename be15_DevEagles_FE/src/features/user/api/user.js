@@ -7,11 +7,14 @@ const api = axios.create({
 });
 
 const exceptToken = [
-  '/auth/login',
-  '/users$',
-  '/users/duplcheck',
-  '/auth/sendauth',
-  '/auth/verify',
+  { method: 'post', url: '/auth/login' },
+  { method: 'post', url: '/users$' },
+  { method: 'post', url: '/users/duplcheck' },
+  { method: 'patch', url: '/users/email/pwd' },
+  { method: 'post', url: '/auth/sendauth' },
+  { method: 'post', url: '/auth/findid' },
+  { method: 'post', url: '/auth/findpwd' },
+  { method: 'post', url: '/auth/verify' },
 ];
 
 api.interceptors.request.use(
@@ -19,7 +22,9 @@ api.interceptors.request.use(
     const authStore = useAuthStore();
     const token = authStore.accessToken;
 
-    const shouldSkipToken = exceptToken.some(pattern => new RegExp(pattern).test(config.url));
+    const shouldSkipToken = exceptToken.some(
+      pattern => pattern.method === config.method && new RegExp(pattern.url).test(config.url)
+    );
 
     if (token && !shouldSkipToken) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -38,6 +43,16 @@ export const logout = () => api.post(`/auth/logout`);
 
 export const validUserStatus = () => api.post(`/auth/valid`);
 
+export const findUserId = params => api.post(`/auth/findid`, params);
+
+export const findUserPwd = params => api.post(`/auth/findpwd`, params);
+
+export const emailEditPassword = params => api.patch(`/users/email/pwd`, params);
+
+export const sendAuth = params => api.post(`/auth/sendauth`, params);
+
+export const verifyEmailCode = params => api.post(`/auth/verify`, params);
+
 export const signUp = formData =>
   api.post(`/users`, formData, {
     headers: {
@@ -46,10 +61,6 @@ export const signUp = formData =>
   });
 
 export const checkDuplicate = params => api.post(`/users/duplcheck`, params);
-
-export const sendAuth = params => api.post(`/auth/sendauth`, params);
-
-export const verifyEmailCode = params => api.post(`/auth/verify`, params);
 
 export const mypage = () => api.get(`/users/me`);
 
@@ -72,3 +83,5 @@ export const editPassword = password =>
       },
     }
   );
+
+export const withdrawUser = () => api.delete(`/users`);
