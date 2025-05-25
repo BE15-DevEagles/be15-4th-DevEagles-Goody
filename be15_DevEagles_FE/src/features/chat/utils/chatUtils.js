@@ -122,22 +122,45 @@ export function getTotalUnreadCount(chats) {
   return chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
 }
 
-export function transformChatRoom(room, currentUserId) {
+export function transformChatRoom(room, currentUserId, teamMembers = []) {
   const otherParticipants = room.participants?.filter(p => p.userId !== currentUserId) || [];
   const otherParticipant = otherParticipants[0];
   const currentUserParticipant = room.participants?.find(p => p.userId === currentUserId);
 
   // AI 채팅방인 경우 기본 썸네일 설정
   let thumbnail = null;
+  let displayName = room.name;
+
   if (room.type === 'AI') {
     thumbnail = '/assets/image/suri.jpg';
+    displayName = '🤖 AI 어시스턴트';
+  } else if (room.type === 'DIRECT' && otherParticipant) {
+    // 1:1 채팅방인 경우 팀원 정보에서 사용자 정보 찾기
+    const memberInfo = teamMembers.find(
+      member => String(member.userId) === String(otherParticipant.userId)
+    );
+
+    if (memberInfo) {
+      // 팀원 정보가 있으면 해당 정보 사용
+      displayName = memberInfo.userName || memberInfo.nickname || '알 수 없는 사용자';
+      thumbnail = memberInfo.userThumbnailUrl || memberInfo.profileImageUrl || null;
+    } else {
+      // 팀원 정보가 없으면 기본값 사용
+      displayName = otherParticipant?.userName || '알 수 없는 사용자';
+      thumbnail = otherParticipant?.userThumbnail || otherParticipant?.userThumbnailUrl || null;
+    }
+  } else if (room.type === 'GROUP') {
+    displayName = room.name || '그룹 채팅';
+    thumbnail = null; // 그룹 채팅은 기본 아바타 사용
   } else {
-    thumbnail = otherParticipant?.userThumbnail || null;
+    // 기타 경우
+    displayName = getDisplayName(room, otherParticipant);
+    thumbnail = otherParticipant?.userThumbnail || otherParticipant?.userThumbnailUrl || null;
   }
 
   return {
     id: room.id,
-    name: room.name || getDisplayName(room, otherParticipant),
+    name: displayName,
     type: room.type,
     isOnline: otherParticipant?.isOnline || false,
     thumbnail: thumbnail,
@@ -146,6 +169,7 @@ export function transformChatRoom(room, currentUserId) {
     lastMessageTimestamp: room.lastMessage?.timestamp,
     unreadCount: room.unreadCount || 0,
     participants: room.participants || [],
+    currentUserId: currentUserId,
     notificationEnabled: currentUserParticipant?.notificationEnabled ?? true,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt,

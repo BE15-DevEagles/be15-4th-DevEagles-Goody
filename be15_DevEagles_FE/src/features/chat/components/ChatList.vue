@@ -31,7 +31,7 @@
       <!-- 채팅 목록 -->
       <div v-else>
         <div
-          v-for="chat in chats"
+          v-for="chat in chatsWithStatus"
           :key="chat.id"
           class="p-3 border-b border-[var(--color-gray-200)] hover:bg-[var(--color-gray-100)] cursor-pointer transition-colors"
           @click="handleChatSelect(chat)"
@@ -85,22 +85,26 @@
                     ({{ chat.participants?.length || 0 }}명)
                   </span>
                   <!-- 알림 끔 상태 표시 -->
-                  <svg
+                  <div
                     v-if="!isNotificationEnabled(chat.id)"
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-3 w-3 ml-1 text-[var(--color-gray-400)]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                    class="ml-1 relative"
                     title="알림 꺼짐"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5.586 15H4l1.405-1.405A2.032 2.032 0 006 12.158V11a6.002 6.002 0 014-5.659V5a2 2 0 114 0v.341C16.67 6.165 18 8.388 18 11v1.159c0 .538.214 1.055.595 1.436L20 15h-1.586M9 18v-1a3 3 0 116 0v1M9 18H6m9-3l-6-6"
-                    />
-                  </svg>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-3 w-3 text-[var(--color-gray-500)]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"
+                      />
+                    </svg>
+                    <!-- 슬래시 표시 -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <div class="w-4 h-0.5 bg-[var(--color-gray-500)] transform rotate-45"></div>
+                    </div>
+                  </div>
                 </h3>
                 <span class="text-xs text-[var(--color-gray-500)] whitespace-nowrap">
                   {{ chat.lastMessageTime }}
@@ -127,8 +131,9 @@
 </template>
 
 <script setup>
-  import { defineProps, defineEmits } from 'vue';
+  import { defineProps, defineEmits, computed } from 'vue';
   import { useNotifications } from '@/features/chat/composables/useNotifications';
+  import { useUserStatus } from '@/features/user/composables/useUserStatus';
   import {
     getChatTypeClass,
     getChatDisplayChar,
@@ -136,6 +141,7 @@
   } from '@/features/chat/utils/chatUtils';
 
   const { isNotificationEnabled } = useNotifications();
+  const { getUserStatus } = useUserStatus();
 
   /**
    * Props:
@@ -185,6 +191,23 @@
    * this.$emit('select-chat', { id: 1, name: '김경록', ... })
    */
   const emit = defineEmits(['select-chat', 'retry-load']);
+
+  // 실시간 온라인 상태를 반영한 채팅 목록
+  const chatsWithStatus = computed(() => {
+    return props.chats.map(chat => {
+      if (chat.type === 'DIRECT' && chat.participants) {
+        // 1:1 채팅에서 상대방의 온라인 상태 업데이트
+        const otherParticipant = chat.participants.find(p => p.userId !== chat.currentUserId);
+        if (otherParticipant) {
+          return {
+            ...chat,
+            isOnline: getUserStatus(otherParticipant.userId),
+          };
+        }
+      }
+      return chat;
+    });
+  });
 
   // 채팅 선택 처리
   function handleChatSelect(chat) {

@@ -8,8 +8,12 @@
         class="w-10 h-10 rounded-md flex items-center justify-center cursor-pointer relative overflow-hidden group transition-all duration-200 shadow-drop"
         :class="[
           team.teamId === teamStore.currentTeamId
-            ? 'bg-[var(--color-primary-300)]'
-            : 'bg-[var(--color-gray-600)] hover:bg-[var(--color-gray-500)]',
+            ? team.teamThumbnailUrl
+              ? ''
+              : 'bg-[var(--color-primary-300)]'
+            : team.teamThumbnailUrl
+              ? ''
+              : 'bg-[var(--color-gray-600)] hover:bg-[var(--color-gray-500)]',
         ]"
         @click="switchTeam(team.teamId)"
       >
