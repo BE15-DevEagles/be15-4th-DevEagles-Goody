@@ -1,6 +1,6 @@
 <script setup>
   import { ref } from 'vue';
-  import { fetchComments } from '@/features/comment/api/comment.js';
+  import { postComment } from '@/features/comment/api/comment.js';
 
   const props = defineProps({
     worklogId: {
@@ -18,8 +18,8 @@
 
     try {
       loading.value = true;
-      await fetchComments(props.worklogId, content.value.trim());
-      emit('comment-added'); // ✅ CommentList가 감지
+      const response = await postComment(props.worklogId, content.value.trim());
+      emit('comment-added', response.data.data); // ✅ 등록된 댓글 객체 전달
       content.value = '';
     } catch (error) {
       console.error('댓글 등록 실패:', error);
