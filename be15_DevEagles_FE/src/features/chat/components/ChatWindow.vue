@@ -50,12 +50,6 @@
               >
                 {{ actualIsOnline ? '온라인' : '오프라인' }}
               </p>
-              <div
-                v-if="isConnected"
-                class="w-2 h-2 bg-green-500 rounded-full"
-                title="실시간 연결됨"
-              ></div>
-              <div v-else class="w-2 h-2 bg-gray-400 rounded-full" title="연결 끊김"></div>
             </div>
           </div>
         </div>
@@ -549,7 +543,7 @@
       clearError,
       onReady: async () => {
         // 메시지 핸들러 등록 (초기화 완료 후)
-        registerMessageHandler(onIncomingMessage);
+        registerMessageHandler(onIncomingMessage, props.chat?.id);
 
         // 스크롤 컨테이너 설정
         if (messagesContainer.value) {
@@ -665,6 +659,11 @@
 
   // 실제 온라인 상태 계산
   const actualIsOnline = computed(() => {
+    // AI 채팅방인 경우 항상 온라인으로 표시
+    if (isCurrentChatAi.value) {
+      return true;
+    }
+
     if (props.chat?.type === 'DIRECT' && props.chat?.participants) {
       const otherParticipant = props.chat.participants.find(p => p.userId !== authStore.userId);
       if (otherParticipant) {

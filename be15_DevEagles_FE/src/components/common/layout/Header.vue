@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-[var(--color-gray-800)] h-14 w-full flex items-center px-3 shadow-drop z-10">
+  <header class="bg-[var(--color-gray-800)] h-14 w-full flex items-center px-3 shadow-drop z-50">
     <div class="flex items-center justify-between w-full">
       <div class="w-30 h-10">
         <img
@@ -59,7 +59,7 @@
 
           <!-- 드롭다운 메뉴 -->
           <div
-            class="absolute right-0 top-full mt-2 bg-white rounded-md shadow-drop overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 w-48 z-50"
+            class="absolute right-0 top-full mt-2 bg-white rounded-md shadow-drop overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 w-48 z-[9999]"
           >
             <div class="py-2">
               <a
@@ -105,13 +105,13 @@
     try {
       console.log('[Header] 로그아웃 시작');
 
-      // 1. 먼저 웹소켓 연결 해제
-      disconnectWebSocket();
-      console.log('[Header] 웹소켓 연결 해제 완료');
-
-      // 2. 사용자 상태 스토어 리셋
+      // 1. 먼저 사용자 상태 스토어 리셋 (웹소켓 구독 해제 포함)
       userStatusStore.reset();
       console.log('[Header] 사용자 상태 스토어 리셋 완료');
+
+      // 2. 웹소켓 연결 해제
+      disconnectWebSocket();
+      console.log('[Header] 웹소켓 연결 해제 완료');
 
       // 3. 서버에 로그아웃 요청
       await logout();
@@ -126,8 +126,8 @@
     } catch (error) {
       console.error('로그아웃 실패:', error);
       // 에러가 발생해도 클라이언트 정리는 수행
-      disconnectWebSocket();
       userStatusStore.reset();
+      disconnectWebSocket();
       authStore.clearAuth();
       router.push('/login');
     }

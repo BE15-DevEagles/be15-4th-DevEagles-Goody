@@ -1,5 +1,5 @@
 import api from '@/api/axios';
-import { sendWebSocketMessage, initializeWebSocket } from './webSocketService';
+import { sendWebSocketMessage } from './webSocketService';
 import { createOrGetAiChatRoom } from './aiChatService';
 import { useAuthStore } from '@/store/auth.js';
 
@@ -109,9 +109,15 @@ export function sendMessage(chatRoomId, message) {
   return sendWebSocketMessage(chatRoomId, message, authStore);
 }
 
-export async function markAsRead(chatRoomId) {
+export async function markAsRead(chatRoomId, messageId = null) {
   try {
-    await api.put(`/chatrooms/${chatRoomId}/read`);
+    const params = {};
+    if (messageId) {
+      params.messageId = messageId;
+    }
+
+    await api.put(`/chatrooms/${chatRoomId}/read`, null, { params });
+    console.log(`[chatService] 읽음 처리 완료: chatRoomId=${chatRoomId}, messageId=${messageId}`);
     return true;
   } catch (error) {
     console.error('읽음 표시 실패:', error);
@@ -159,16 +165,6 @@ export async function getAllNotificationSettings() {
   } catch (error) {
     console.error('전체 알림 설정 조회 실패:', error);
     throw error;
-  }
-}
-
-export function initializeChat() {
-  let authStore;
-  try {
-    authStore = useAuthStore();
-    initializeWebSocket(authStore);
-  } catch (error) {
-    console.error('채팅 초기화 실패:', error);
   }
 }
 

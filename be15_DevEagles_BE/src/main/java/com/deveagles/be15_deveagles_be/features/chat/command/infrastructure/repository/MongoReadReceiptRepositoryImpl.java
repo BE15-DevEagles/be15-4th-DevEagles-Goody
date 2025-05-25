@@ -58,4 +58,9 @@ public class MongoReadReceiptRepositoryImpl implements ReadReceiptRepository {
   public void deleteByMessageId(String messageId) {
     repository.deleteByMessageId(messageId);
   }
+
+  @Override
+  public void deleteByChatroomIdAndUserId(String chatroomId, String userId) {
+    repository.deleteByChatroomIdAndUserId(chatroomId, userId);
+  }
 }

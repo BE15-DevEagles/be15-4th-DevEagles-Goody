@@ -245,4 +245,13 @@ public class ChatRoomServiceImpl implements ChatRoomService {
         .filter(response -> response != null)
         .collect(Collectors.toList());
   }
+
+  @Override
+  @Transactional(readOnly = true)
+  public List<ChatRoomResponse> getUserAiChatRooms(String userId) {
+    List<ChatRoom> aiChatRooms =
+        chatRoomRepository.findByUserIdAndTypeAndDeletedAtIsNull(userId, ChatRoomType.AI);
+
+    return aiChatRooms.stream().map(ChatRoomResponse::from).toList();
+  }
 }

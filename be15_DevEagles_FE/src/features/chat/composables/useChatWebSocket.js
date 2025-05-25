@@ -7,10 +7,12 @@ import {
   unsubscribe,
   isWebSocketConnected,
 } from '@/features/chat/api/webSocketService.js';
+import { useAuthStore } from '@/store/auth.js';
 
 export function useChatWebSocket() {
   const currentSubscription = ref(null);
   const isConnected = ref(false);
+  const authStore = useAuthStore();
 
   // WebSocket 연결 상태 업데이트
   const updateConnectionStatus = () => {
@@ -41,11 +43,23 @@ export function useChatWebSocket() {
           id: message.id,
           chatroomId: message.chatroomId,
           content: message.content?.substring(0, 20),
+          senderId: message.senderId,
         });
 
         // 채팅방 ID 검증 후 핸들러 호출
         if (messageHandler && message.chatroomId === chatRoomId) {
           messageHandler(message);
+
+          // 자동 읽음 처리 (내가 보낸 메시지가 아닌 경우)
+          const currentUserId = authStore.user?.id?.toString();
+          if (message.senderId !== currentUserId && message.id) {
+            console.log('[useChatWebSocket] 자동 읽음 처리:', {
+              messageId: message.id,
+              senderId: message.senderId,
+              currentUserId: currentUserId,
+            });
+            markMessageAsRead(chatRoomId, message.id);
+          }
         } else {
           console.warn('[useChatWebSocket] 메시지 채팅방 ID 불일치:', {
             expected: chatRoomId,

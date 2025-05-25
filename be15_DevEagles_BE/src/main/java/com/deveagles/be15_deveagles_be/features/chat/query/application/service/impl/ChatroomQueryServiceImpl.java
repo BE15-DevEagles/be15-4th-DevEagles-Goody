@@ -1,7 +1,10 @@
 package com.deveagles.be15_deveagles_be.features.chat.query.application.service.impl;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ReadReceiptService;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom.Participant;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatMessageRepository;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ReadReceiptRepository;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomListResponse;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomReadSummaryResponse;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomReadSummaryResponse.UnreadByUserDto;
@@ -25,10 +28,13 @@ public class ChatroomQueryServiceImpl implements ChatroomQueryService {
 
   private final ChatroomQueryRepository chatroomQueryRepository;
   private final ChatroomResponseConverter chatroomResponseConverter;
+  private final ChatMessageRepository chatMessageRepository;
+  private final ReadReceiptRepository readReceiptRepository;
+  private final ReadReceiptService readReceiptService;
 
   @Override
   public ChatroomListResponse getChatrooms(Long userId, String teamId, int page, int size) {
-    log.info("채팅방 목록 조회 서비스 -> 사용자ID: {}, 팀ID: {}, 페이지: {}, 크기: {}", userId, teamId, page, size);
+    log.info("채팅방 목록 조회 서비스 -> 사용자ID: {}, 팀ID: {}", userId, teamId);
 
     List<ChatRoom> chatrooms =
         chatroomQueryRepository.findChatroomsByUserIdAndTeamId(userId, teamId, page, size);
@@ -36,7 +42,27 @@ public class ChatroomQueryServiceImpl implements ChatroomQueryService {
 
     List<ChatroomResponse> chatroomResponses =
         chatrooms.stream()
-            .map(chatroomResponseConverter::convertToChatroomResponse)
+            .map(
+                chatroom -> {
+                  ChatroomResponse response =
+                      chatroomResponseConverter.convertToChatroomResponse(chatroom);
+                  // ReadReceiptService를 사용하여 읽지 않은 메시지 수 계산
+                  int unreadCount =
+                      readReceiptService.getUnreadMessageCount(
+                          chatroom.getId(), String.valueOf(userId));
+                  return ChatroomResponse.builder()
+                      .id(response.getId())
+                      .teamId(response.getTeamId())
+                      .name(response.getName())
+                      .isDefault(response.getIsDefault())
+                      .type(response.getType())
+                      .lastMessage(response.getLastMessage())
+                      .participants(response.getParticipants())
+                      .createdAt(response.getCreatedAt())
+                      .isDeleted(response.getIsDeleted())
+                      .unreadCount(unreadCount)
+                      .build();
+                })
             .collect(Collectors.toList());
 
     return ChatroomListResponse.of(chatroomResponses, totalCount);
@@ -48,7 +74,26 @@ public class ChatroomQueryServiceImpl implements ChatroomQueryService {
 
     Optional<ChatRoom> chatroom = chatroomQueryRepository.findChatroomById(chatroomId);
 
-    return chatroom.map(chatroomResponseConverter::convertToChatroomResponse).orElse(null);
+    if (chatroom.isEmpty()) {
+      return null;
+    }
+
+    ChatroomResponse response = chatroomResponseConverter.convertToChatroomResponse(chatroom.get());
+    // ReadReceiptService를 사용하여 읽지 않은 메시지 수 계산
+    int unreadCount = readReceiptService.getUnreadMessageCount(chatroomId, String.valueOf(userId));
+
+    return ChatroomResponse.builder()
+        .id(response.getId())
+        .teamId(response.getTeamId())
+        .name(response.getName())
+        .isDefault(response.getIsDefault())
+        .type(response.getType())
+        .lastMessage(response.getLastMessage())
+        .participants(response.getParticipants())
+        .createdAt(response.getCreatedAt())
+        .isDeleted(response.getIsDeleted())
+        .unreadCount(unreadCount)
+        .build();
   }
 
   @Override

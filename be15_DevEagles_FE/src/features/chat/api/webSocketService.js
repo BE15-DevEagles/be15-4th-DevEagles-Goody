@@ -8,6 +8,7 @@ let reconnectAttempts = 0;
 let connectionState = 'disconnected'; // 'connecting', 'connected', 'disconnected', 'failed'
 let heartbeatInterval = null;
 let connectionStateCallbacks = [];
+let isManualDisconnect = false; // 수동 연결 해제 플래그 추가
 const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY = 1000;
 
@@ -37,7 +38,14 @@ function startHeartbeat() {
       console.log('WebSocket 하트비트 확인됨');
     } else {
       console.warn('WebSocket 연결이 끊어짐 - 재연결 시도');
-      connectWebSocket();
+      // 수동 연결 해제나 인증 토큰이 없으면 재연결하지 않음
+      const token = localStorage.getItem('accessToken');
+      if (!isManualDisconnect && token) {
+        connectWebSocket();
+      } else {
+        console.log('수동 연결 해제 상태이거나 인증 토큰이 없어 재연결하지 않습니다.');
+        stopHeartbeat();
+      }
     }
   }, 30000); // 30초마다 확인
 }
@@ -55,6 +63,9 @@ export function initializeWebSocket() {
     return;
   }
 
+  // 수동 연결 해제 플래그 리셋
+  isManualDisconnect = false;
+
   connectWebSocket();
 }
 
@@ -64,9 +75,20 @@ function connectWebSocket() {
     return;
   }
 
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.error('최대 재연결 시도 횟수를 초과했습니다.');
-    notifyConnectionStateChange('failed');
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS || isManualDisconnect) {
+    if (isManualDisconnect) {
+      console.log('수동 연결 해제 상태로 재연결하지 않습니다.');
+    } else {
+      console.error('최대 재연결 시도 횟수를 초과했습니다.');
+      notifyConnectionStateChange('failed');
+    }
+    return;
+  }
+
+  // 인증 토큰 확인
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    console.log('인증 토큰이 없어 웹소켓 연결을 시도하지 않습니다.');
     return;
   }
 
@@ -92,8 +114,6 @@ function connectWebSocket() {
     url: wsUrl,
   });
 
-  // JWT 토큰 가져오기
-  const token = localStorage.getItem('accessToken');
   const connectHeaders = {};
 
   if (token) {
@@ -133,13 +153,28 @@ function connectWebSocket() {
       stopHeartbeat();
       reconnectAttempts++;
 
-      // 지수 백오프 재연결
-      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), 30000);
-      console.log(`${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+      // 수동 연결 해제나 인증 토큰이 없으면 재연결하지 않음
+      const token = localStorage.getItem('accessToken');
+      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isManualDisconnect && token) {
+        // 지수 백오프 재연결
+        const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), 30000);
+        console.log(
+          `${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+        );
 
-      setTimeout(() => {
-        connectWebSocket();
-      }, delay);
+        setTimeout(() => {
+          connectWebSocket();
+        }, delay);
+      } else {
+        if (isManualDisconnect) {
+          console.log('수동 연결 해제 상태로 재연결하지 않습니다.');
+        } else if (!token) {
+          console.log('인증 토큰이 없어 재연결하지 않습니다.');
+        } else {
+          console.error('최대 재연결 시도 횟수를 초과했습니다.');
+          notifyConnectionStateChange('failed');
+        }
+      }
     }
   );
 
@@ -149,17 +184,31 @@ function connectWebSocket() {
     notifyConnectionStateChange('disconnected');
     stopHeartbeat();
 
-    // 자동 재연결 시도
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    // 수동 연결 해제가 아니고 인증 토큰이 있는 경우에만 자동 재연결 시도
+    const token = localStorage.getItem('accessToken');
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isManualDisconnect && token) {
       setTimeout(() => {
         connectWebSocket();
       }, BASE_RECONNECT_DELAY);
+    } else {
+      if (isManualDisconnect) {
+        console.log('수동 연결 해제 상태로 재연결하지 않습니다.');
+      } else if (!token) {
+        console.log('인증 토큰이 없어 재연결하지 않습니다.');
+      }
     }
   });
 }
 
 export function subscribeToChatRoom(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
+    // 인증 토큰 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.log('[subscribeToChatRoom] 인증 토큰이 없어 구독하지 않습니다.');
+      return;
+    }
+
     console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
     initializeWebSocket();
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장
@@ -217,6 +266,13 @@ export function subscribeToChatRoom(chatRoomId, callback) {
 
 export function subscribeToReadStatus(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
+    // 인증 토큰 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.log('[subscribeToReadStatus] 인증 토큰이 없어 구독하지 않습니다.');
+      return;
+    }
+
     console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
     initializeWebSocket();
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장
@@ -331,6 +387,11 @@ export function unsubscribe(destination) {
 }
 
 export function disconnectWebSocket() {
+  console.log('[webSocketService] 웹소켓 연결 해제 시작');
+
+  // 수동 연결 해제 플래그 설정
+  isManualDisconnect = true;
+
   if (stompClient && stompClient.connected) {
     Object.keys(subscriptions).forEach(destination => {
       if (subscriptions[destination].subscription) {
@@ -341,8 +402,12 @@ export function disconnectWebSocket() {
 
     stompClient.disconnect();
     stompClient = null;
-    console.log('웹소켓 연결 종료');
+    console.log('[webSocketService] 웹소켓 연결 종료 완료');
   }
+
+  // 상태 초기화
+  reconnectAttempts = 0;
+  notifyConnectionStateChange('disconnected');
 }
 
 export function getWebSocketStatus() {
@@ -360,9 +425,20 @@ export function isWebSocketConnected() {
 }
 
 export function forceReconnect() {
+  // 인증 토큰 확인
+  const token = localStorage.getItem('accessToken');
+  if (!token) {
+    console.log('[forceReconnect] 인증 토큰이 없어 재연결하지 않습니다.');
+    return;
+  }
+
   console.log('강제 재연결 시도...');
   disconnectWebSocket();
+
+  // 수동 연결 해제 플래그 리셋 (강제 재연결이므로)
+  isManualDisconnect = false;
   reconnectAttempts = 0;
+
   setTimeout(() => {
     initializeWebSocket();
   }, 1000);
@@ -370,6 +446,13 @@ export function forceReconnect() {
 
 export function subscribeToUserStatus(callback) {
   if (!stompClient || !stompClient.connected) {
+    // 인증 토큰 확인
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      console.log('[subscribeToUserStatus] 인증 토큰이 없어 구독하지 않습니다.');
+      return;
+    }
+
     console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
     initializeWebSocket();
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장

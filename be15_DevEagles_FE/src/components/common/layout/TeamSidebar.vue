@@ -106,13 +106,22 @@
   // 팀 변경 감지 및 관련 데이터 갱신
   watch(
     () => teamStore.currentTeamId,
-    newTeamId => {
+    async newTeamId => {
       if (newTeamId) {
         try {
-          chatStore.loadChatRooms();
+          // 채팅방 목록 새로고침 (AI 채팅방 포함)
+          await chatStore.loadChatRooms();
           console.log(`팀 변경: ${newTeamId}, 팀원 수: ${teamStore.teamMembers.length}`);
         } catch (err) {
           console.error('팀 관련 데이터 갱신 실패:', err);
+        }
+      } else {
+        // 팀이 선택되지 않은 경우에도 AI 채팅방은 로드
+        try {
+          await chatStore.loadChatRooms();
+          console.log('팀 선택 해제 - AI 채팅방만 로드');
+        } catch (err) {
+          console.error('AI 채팅방 로드 실패:', err);
         }
       }
     },

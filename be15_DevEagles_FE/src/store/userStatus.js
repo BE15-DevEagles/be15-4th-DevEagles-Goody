@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { subscribeToUserStatus } from '@/features/chat/api/webSocketService';
+import { subscribeToUserStatus, unsubscribe } from '@/features/chat/api/webSocketService';
 import { getOnlineUsers } from '@/features/chat/api/userStatusService';
 
 export const useUserStatusStore = defineStore('userStatus', {
@@ -100,6 +100,14 @@ export const useUserStatusStore = defineStore('userStatus', {
 
     // 초기화 상태 리셋
     reset() {
+      // 웹소켓 사용자 상태 구독 해제
+      try {
+        unsubscribe('user.status');
+        console.log('[UserStatusStore] 사용자 상태 웹소켓 구독 해제 완료');
+      } catch (error) {
+        console.error('[UserStatusStore] 사용자 상태 구독 해제 실패:', error);
+      }
+
       this.onlineUsers.clear();
       this.isInitialized = false;
       console.log('[UserStatusStore] 상태 초기화됨');

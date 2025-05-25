@@ -164,7 +164,7 @@
   const teamMembersWithStatus = computed(() => {
     return props.teamMembers.map(member => ({
       ...member,
-      isOnline: userStatusStore.isUserOnline(member.userId),
+      isOnline: isCurrentUser(member.userId) ? true : userStatusStore.isUserOnline(member.userId),
     }));
   });
 
@@ -187,7 +187,7 @@
     FEAR: '두려움',
     SURPRISE: '놀람',
     DISGUST: '혐오',
-    NEUTRAL: '중성',
+    NEUTRAL: '보통',
   };
 
   // 감정 아이콘 가져오기

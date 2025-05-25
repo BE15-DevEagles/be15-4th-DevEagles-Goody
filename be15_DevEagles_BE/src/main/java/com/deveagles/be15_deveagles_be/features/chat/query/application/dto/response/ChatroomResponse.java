@@ -21,6 +21,7 @@ public class ChatroomResponse {
   private List<ParticipantDto> participants;
   private LocalDateTime createdAt;
   private Boolean isDeleted;
+  private Integer unreadCount; // 읽지 않은 메시지 수
 
   @Getter
   @Builder

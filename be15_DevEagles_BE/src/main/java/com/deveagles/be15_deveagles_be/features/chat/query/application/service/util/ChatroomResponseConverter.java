@@ -32,6 +32,7 @@ public class ChatroomResponseConverter {
         .participants(participants)
         .createdAt(chatRoom.getCreatedAt())
         .isDeleted(chatRoom.isDeleted())
+        .unreadCount(0)
         .build();
   }
 

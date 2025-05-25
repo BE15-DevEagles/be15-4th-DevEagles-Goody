@@ -1,7 +1,6 @@
 import { ref, nextTick } from 'vue';
 import { useAuthStore } from '@/store/auth';
 import { useChatStore } from '@/store/chat';
-import { subscribeToChatRoom } from '@/features/chat/api/webSocketService';
 
 export function useChatWindow() {
   const authStore = useAuthStore();
@@ -35,10 +34,7 @@ export function useChatWindow() {
       // 채팅방 읽음 처리
       await markChatAsRead(chatId);
 
-      // ChatWindow 전용 메시지 핸들러 설정
-      setupChatWindowMessageHandler(chatId);
-
-      // 초기화 완료 콜백
+      // 초기화 완료 콜백 (여기서 registerMessageHandler가 호출됨)
       if (onReady) {
         onReady();
       }
@@ -48,39 +44,6 @@ export function useChatWindow() {
       console.error('[useChatWindow] 채팅 초기화 실패:', err);
       throw err;
     }
-  };
-
-  // ChatWindow 전용 메시지 핸들러 설정
-  const setupChatWindowMessageHandler = chatId => {
-    // 기존 핸들러 정리
-    if (currentChatMessageHandler.value) {
-      currentChatMessageHandler.value = null;
-    }
-
-    // 새로운 핸들러 설정 - 전역 구독에 추가로 ChatWindow 전용 구독
-    subscribeToChatRoom(chatId, message => {
-      console.log('[useChatWindow] ChatWindow 전용 메시지 수신:', {
-        id: message.id,
-        chatroomId: message.chatroomId,
-        content: message.content?.substring(0, 20),
-        hasHandler: !!currentChatMessageHandler.value,
-      });
-
-      // ChatWindow의 handleIncomingMessage 호출
-      if (currentChatMessageHandler.value) {
-        console.log('[useChatWindow] 메시지 핸들러 호출 시작');
-        try {
-          currentChatMessageHandler.value(message);
-          console.log('[useChatWindow] 메시지 핸들러 호출 완료');
-        } catch (error) {
-          console.error('[useChatWindow] 메시지 핸들러 호출 중 오류:', error);
-        }
-      } else {
-        console.warn('[useChatWindow] 메시지 핸들러가 등록되지 않음');
-      }
-    });
-
-    console.log('[useChatWindow] ChatWindow 전용 메시지 핸들러 설정 완료:', chatId);
   };
 
   const handleIncomingMessage = (
@@ -129,13 +92,19 @@ export function useChatWindow() {
     }
   };
 
-  // ChatWindow 메시지 핸들러 등록
-  const registerMessageHandler = handler => {
+  // ChatWindow 메시지 핸들러 등록 - 전역 핸들러에 등록
+  const registerMessageHandler = (handler, chatId) => {
     console.log('[useChatWindow] 메시지 핸들러 등록 요청:', {
       hasHandler: !!handler,
       handlerType: typeof handler,
+      chatId,
     });
+
     currentChatMessageHandler.value = handler;
+
+    // 전역 메시지 핸들러에 ChatWindow 핸들러 등록
+    chatStore.registerChatWindowHandler(chatId, handler);
+
     console.log('[useChatWindow] 메시지 핸들러 등록 완료:', {
       isRegistered: !!currentChatMessageHandler.value,
     });
@@ -144,6 +113,10 @@ export function useChatWindow() {
   // ChatWindow 메시지 핸들러 해제
   const unregisterMessageHandler = () => {
     console.log('[useChatWindow] 메시지 핸들러 해제 요청');
+
+    // 전역 핸들러에서 제거
+    chatStore.unregisterChatWindowHandler();
+
     currentChatMessageHandler.value = null;
     console.log('[useChatWindow] 메시지 핸들러 해제 완료');
   };
