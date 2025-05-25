@@ -126,7 +126,7 @@
     try {
       const res = await login(params.value);
 
-      authStore.setAuth(res.data.data.accessToken);
+      await authStore.setAuth(res.data.data.accessToken);
       localStorage.setItem('refreshToken', res.data.data.refreshToken);
 
       const res_valid = await validUserStatus();

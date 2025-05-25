@@ -45,14 +45,14 @@
             </h3>
             <div class="flex items-center gap-2">
               <p
-                v-if="chat.isOnline !== undefined"
+                v-if="actualIsOnline !== undefined"
                 class="text-[var(--color-gray-500)] font-small leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
               >
-                {{ chat.isOnline ? '온라인' : '오프라인' }}
+                {{ actualIsOnline ? '온라인' : '오프라인' }}
               </p>
               <div
                 v-if="isConnected"
-                class="w-2 h-2 bg-green-400 rounded-full"
+                class="w-2 h-2 bg-green-500 rounded-full"
                 title="실시간 연결됨"
               ></div>
               <div v-else class="w-2 h-2 bg-gray-400 rounded-full" title="연결 끊김"></div>
@@ -360,6 +360,7 @@
 <script setup>
   import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue';
   import { useAuthStore } from '@/store/auth';
+  import { useUserStatusStore } from '@/store/userStatus';
   import { useNotifications } from '@/features/chat/composables/useNotifications';
   import { useMessages } from '@/features/chat/composables/useMessages';
   import { useChatWebSocket } from '@/features/chat/composables/useChatWebSocket';
@@ -385,6 +386,7 @@
   const newMessage = ref('');
   const messagesContainer = ref(null);
   const authStore = useAuthStore();
+  const userStatusStore = useUserStatusStore();
 
   // 컴포저블 사용
   const {
@@ -436,7 +438,13 @@
     reset: resetScroll,
   } = useChatScroll();
 
-  const { initializeChat, handleIncomingMessage, loadMoreMessages } = useChatWindow();
+  const {
+    initializeChat,
+    handleIncomingMessage,
+    loadMoreMessages,
+    registerMessageHandler,
+    unregisterMessageHandler,
+  } = useChatWindow();
 
   // AI 채팅 컴포저블 추가
   const {
@@ -500,11 +508,22 @@
 
   // 메시지 핸들러
   const onIncomingMessage = message => {
+    console.log('[ChatWindow] onIncomingMessage 호출됨:', {
+      messageId: message.id,
+      chatroomId: message.chatroomId,
+      currentChatId: props.chat?.id,
+      content: message.content?.substring(0, 20),
+      senderName: message.senderName,
+      senderId: message.senderId,
+    });
+
     // AI 메시지 처리
     if (isCurrentChatAi.value && isAiMessage(message)) {
+      console.log('[ChatWindow] AI 메시지 처리 중');
       handleAiMessage(message);
     }
 
+    console.log('[ChatWindow] handleIncomingMessage 호출 전');
     handleIncomingMessage(message, {
       currentChatId: props.chat?.id,
       addMessage,
@@ -514,6 +533,7 @@
       },
       scrollToBottom,
     });
+    console.log('[ChatWindow] handleIncomingMessage 호출 후');
   };
 
   const handleReadStatusMessage = readStatus => {
@@ -528,6 +548,9 @@
       markChatAsRead,
       clearError,
       onReady: async () => {
+        // 메시지 핸들러 등록 (초기화 완료 후)
+        registerMessageHandler(onIncomingMessage);
+
         // 스크롤 컨테이너 설정
         if (messagesContainer.value) {
           setScrollContainer(messagesContainer.value);
@@ -576,11 +599,7 @@
 
     try {
       // 즉시 UI에 임시 메시지 추가
-      const tempMessage = addTemporaryMessage(
-        messageText,
-        authStore.userId,
-        authStore.userName || authStore.nickname
-      );
+      const tempMessage = addTemporaryMessage(messageText, authStore.userId, authStore.name);
 
       // AI 채팅방에서 기분 질문 답변 처리
       if (isCurrentChatAi.value) {
@@ -644,6 +663,17 @@
     }
   };
 
+  // 실제 온라인 상태 계산
+  const actualIsOnline = computed(() => {
+    if (props.chat?.type === 'DIRECT' && props.chat?.participants) {
+      const otherParticipant = props.chat.participants.find(p => p.userId !== authStore.userId);
+      if (otherParticipant) {
+        return userStatusStore.isUserOnline(otherParticipant.userId);
+      }
+    }
+    return props.chat?.isOnline;
+  });
+
   // 감시자
   watch(
     () => props.chat?.id,
@@ -653,6 +683,7 @@
       if (newChatId && newChatId !== oldChatId) {
         // 기존 구독 해제
         unsubscribeFromChat();
+        unregisterMessageHandler();
 
         // 모든 상태 클리어
         clearMessages();
@@ -669,6 +700,7 @@
         }, 100);
       } else if (!newChatId) {
         unsubscribeFromChat();
+        unregisterMessageHandler();
         clearMessages();
         resetInfiniteScroll();
         resetScroll();
@@ -681,6 +713,7 @@
   onBeforeUnmount(() => {
     console.log('[ChatWindow] 컴포넌트 정리');
     unsubscribeFromChat();
+    unregisterMessageHandler();
     clearMessages();
   });
 </script>
