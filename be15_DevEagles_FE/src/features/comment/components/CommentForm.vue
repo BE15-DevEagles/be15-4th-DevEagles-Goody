@@ -19,7 +19,7 @@
     try {
       loading.value = true;
       const response = await postComment(props.worklogId, content.value.trim());
-      emit('comment-added', response.data.data); // ✅ 등록된 댓글 객체 전달
+      emit('comment-added', response.data.data);
       content.value = '';
     } catch (error) {
       console.error('댓글 등록 실패:', error);

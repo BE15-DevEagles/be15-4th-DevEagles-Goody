@@ -54,21 +54,21 @@
     <div v-else class="space-y-8">
       <!-- 보고서 형식 카드 -->
       <div class="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
-        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📌 업무 내용</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">1. 업무 내용</h2>
         <div class="text-gray-700 whitespace-pre-line leading-relaxed">
           {{ full.workContent || '없음' }}
         </div>
       </div>
 
       <div class="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
-        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">⚠️ 특이 사항</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">2. 특이 사항</h2>
         <div class="text-gray-700 whitespace-pre-line leading-relaxed">
           {{ full.note || '없음' }}
         </div>
       </div>
 
       <div class="bg-gray-50 p-6 rounded-lg shadow border border-gray-200">
-        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">📅 익일 업무 계획</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">3. 익일 업무 계획</h2>
         <div class="text-gray-700 whitespace-pre-line leading-relaxed">
           {{ full.planContent || '없음' }}
         </div>
@@ -76,7 +76,7 @@
 
       <!-- 댓글 영역 -->
       <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
-        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">💬 댓글</h2>
+        <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">댓글</h2>
         <CommentList :worklog-id="Number(worklogId)" />
       </div>
     </div>
