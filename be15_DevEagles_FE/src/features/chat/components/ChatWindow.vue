@@ -50,12 +50,7 @@
               >
                 {{ actualIsOnline ? '온라인' : '오프라인' }}
               </p>
-              <div
-                v-if="isConnected"
-                class="w-2 h-2 bg-green-500 rounded-full"
-                title="실시간 연결됨"
-              ></div>
-              <div v-else class="w-2 h-2 bg-gray-400 rounded-full" title="연결 끊김"></div>
+              <!-- 웹소켓 연결 상태는 별도 영역에서 표시 -->
             </div>
           </div>
         </div>
@@ -241,26 +236,40 @@
                 :class="message.isMe ? 'flex-row-reverse' : 'flex-row'"
               >
                 <!-- 메시지 버블 -->
-                <AiMessageBubble
-                  v-if="isCurrentChatAi && isAiMessage(message)"
-                  :message="message"
-                  :is-thinking="isAiThinking"
-                  :is-processing="isProcessingMood"
-                />
-                <div
-                  v-else
-                  class="px-3 py-2 rounded-lg max-w-full break-words"
-                  :class="[
-                    message.isMe
-                      ? 'bg-[var(--color-primary-300)] text-white'
-                      : 'bg-white text-[var(--color-gray-700)] border border-[var(--color-gray-200)]',
-                    msgIndex === 0 && message.isMe ? 'rounded-tr-sm' : '',
-                    msgIndex === 0 && !message.isMe ? 'rounded-tl-sm' : '',
-                    msgIndex === group.messages.length - 1 && message.isMe ? 'rounded-br-sm' : '',
-                    msgIndex === group.messages.length - 1 && !message.isMe ? 'rounded-bl-sm' : '',
-                  ]"
-                >
-                  <p class="font-body text-sm whitespace-pre-wrap">{{ message.content }}</p>
+                <div class="flex flex-col" :class="message.isMe ? 'items-end' : 'items-start'">
+                  <AiMessageBubble
+                    v-if="isCurrentChatAi && isAiMessage(message)"
+                    :message="message"
+                    :is-thinking="isAiThinking"
+                    :is-processing="isProcessingMood"
+                  />
+                  <div
+                    v-else
+                    class="px-3 py-2 rounded-lg max-w-full break-words"
+                    :class="[
+                      message.isMe
+                        ? 'bg-[var(--color-primary-300)] text-white'
+                        : 'bg-white text-[var(--color-gray-700)] border border-[var(--color-gray-200)]',
+                      msgIndex === 0 && message.isMe ? 'rounded-tr-sm' : '',
+                      msgIndex === 0 && !message.isMe ? 'rounded-tl-sm' : '',
+                      msgIndex === group.messages.length - 1 && message.isMe ? 'rounded-br-sm' : '',
+                      msgIndex === group.messages.length - 1 && !message.isMe
+                        ? 'rounded-bl-sm'
+                        : '',
+                    ]"
+                  >
+                    <p class="font-body text-sm whitespace-pre-wrap">{{ message.content }}</p>
+                  </div>
+
+                  <!-- 읽음 상태 표시 (마지막 메시지에만) -->
+                  <MessageReadStatus
+                    v-if="msgIndex === group.messages.length - 1"
+                    :ref="el => registerReadStatusRef(message.id, el)"
+                    :message="message"
+                    :chatroom-id="chat.id"
+                    :show-for-my-messages="true"
+                    @vue:before-unmount="() => unregisterReadStatusRef(message.id)"
+                  />
                 </div>
 
                 <!-- 시간 표시 (마지막 메시지에만) -->
@@ -340,9 +349,13 @@
         </button>
       </div>
 
-      <!-- 연결 상태 표시 -->
-      <div v-if="!isConnected" class="text-xs text-orange-500 mt-2 text-center">
-        실시간 연결이 끊어졌습니다. 메시지가 즉시 전달되지 않을 수 있습니다.
+      <!-- 웹소켓 연결 상태 표시 -->
+      <div
+        v-if="!isConnected"
+        class="text-xs text-orange-500 mt-2 text-center flex items-center justify-center gap-2"
+      >
+        <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+        <span>웹소켓 연결이 끊어졌습니다. 메시지가 즉시 전달되지 않을 수 있습니다.</span>
       </div>
 
       <!-- AI 응답 대기 상태 표시 -->
@@ -371,6 +384,7 @@
   import { useDebounce } from '@/features/chat/composables/useDebounce';
   import { useAiChat } from '@/features/chat/composables/useAiChat';
   import AiMessageBubble from './AiMessageBubble.vue';
+  import MessageReadStatus from './MessageReadStatus.vue';
   import api from '@/api/axios';
 
   const props = defineProps({
@@ -387,6 +401,7 @@
   const messagesContainer = ref(null);
   const authStore = useAuthStore();
   const userStatusStore = useUserStatusStore();
+  const messageReadStatusRefs = ref(new Map());
 
   // 컴포저블 사용
   const {
@@ -538,9 +553,25 @@
 
   const handleReadStatusMessage = readStatus => {
     console.log('[ChatWindow] 읽음 상태 수신:', readStatus);
+
+    const messageReadStatusRef = messageReadStatusRefs.value.get(readStatus.lastReadMessageId);
+    if (messageReadStatusRef && messageReadStatusRef.refreshReadStatus) {
+      messageReadStatusRef.refreshReadStatus();
+    }
   };
 
-  // 액션 함수들
+  const registerReadStatusRef = (messageId, ref) => {
+    if (messageId && ref) {
+      messageReadStatusRefs.value.set(messageId, ref);
+    }
+  };
+
+  const unregisterReadStatusRef = messageId => {
+    if (messageId) {
+      messageReadStatusRefs.value.delete(messageId);
+    }
+  };
+
   const initChat = async () => {
     await initializeChat(props.chat?.id, {
       loadChatHistory,
@@ -557,6 +588,9 @@
         }
         // 하단으로 스크롤
         nextTick(() => scrollToBottom(true));
+
+        // WebSocket 구독 (메시지 + 읽음 상태)
+        subscribeToChat(props.chat.id, onIncomingMessage, handleReadStatusMessage);
 
         // AI 채팅방인 경우 초기화
         if (isCurrentChatAi.value && props.chat?.id) {

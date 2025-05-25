@@ -8,8 +8,10 @@ let reconnectAttempts = 0;
 let connectionState = 'disconnected'; // 'connecting', 'connected', 'disconnected', 'failed'
 let heartbeatInterval = null;
 let connectionStateCallbacks = [];
-const MAX_RECONNECT_ATTEMPTS = 10;
+let isLoggedOut = false; // 로그아웃 상태 추적
+const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000; // 최대 30초
 
 // 연결 상태 변경 이벤트 구독
 export function onConnectionStateChange(callback) {
@@ -19,9 +21,15 @@ export function onConnectionStateChange(callback) {
 
 function notifyConnectionStateChange(newState) {
   connectionState = newState;
-  connectionStateCallbacks.forEach(callback => {
+  connectionStateCallbacks.forEach(callbackItem => {
     try {
-      callback(newState);
+      // 콜백이 함수인지 확인
+      const callback = typeof callbackItem === 'function' ? callbackItem : callbackItem?.callback;
+      if (typeof callback === 'function') {
+        callback(newState);
+      } else {
+        console.warn('[webSocketService] 유효하지 않은 콜백:', callbackItem);
+      }
     } catch (error) {
       console.error('연결 상태 콜백 오류:', error);
     }
@@ -35,11 +43,12 @@ function startHeartbeat() {
     if (stompClient && stompClient.connected) {
       // 하트비트 전송 (STOMP 자체 하트비트 사용)
       console.log('WebSocket 하트비트 확인됨');
-    } else {
+    } else if (!isLoggedOut) {
+      // 로그아웃 상태가 아닐 때만 재연결 시도
       console.warn('WebSocket 연결이 끊어짐 - 재연결 시도');
       connectWebSocket();
     }
-  }, 30000); // 30초마다 확인
+  }, 60000); // 30초에서 60초로 변경
 }
 
 function stopHeartbeat() {
@@ -52,15 +61,64 @@ function stopHeartbeat() {
 export function initializeWebSocket() {
   if (stompClient && stompClient.connected) {
     console.log('이미 웹소켓이 연결되어 있습니다.');
-    return;
+    return Promise.resolve();
   }
 
-  connectWebSocket();
+  // 기존 연결이 있으면 먼저 정리
+  if (stompClient) {
+    console.log('[webSocketService] 기존 웹소켓 연결 정리 중...');
+    try {
+      stompClient.disconnect();
+    } catch (error) {
+      console.warn('[webSocketService] 기존 연결 정리 중 오류:', error);
+    }
+    stompClient = null;
+  }
+
+  if (connectionState === 'connecting') {
+    console.log('이미 연결 시도 중입니다. 연결 완료까지 대기...');
+    // 연결 완료까지 대기하는 Promise 반환
+    return new Promise(resolve => {
+      const checkConnection = () => {
+        if (stompClient && stompClient.connected) {
+          resolve();
+        } else if (connectionState === 'failed' || connectionState === 'disconnected') {
+          // 연결 실패 시 새로 시도
+          connectWebSocket();
+          setTimeout(checkConnection, 1000);
+        } else {
+          setTimeout(checkConnection, 500);
+        }
+      };
+      checkConnection();
+    });
+  }
+
+  return new Promise(resolve => {
+    const originalCallback = connectionStateCallbacks.find(cb => cb.name === 'initResolve');
+    if (!originalCallback) {
+      connectionStateCallbacks.push({
+        name: 'initResolve',
+        callback: state => {
+          if (state === 'connected') {
+            resolve();
+          }
+        },
+      });
+    }
+    connectWebSocket();
+  });
 }
 
 function connectWebSocket() {
   if (connectionState === 'connecting') {
     console.log('이미 연결 시도 중입니다.');
+    return;
+  }
+
+  // 로그아웃 상태에서는 재연결하지 않음
+  if (isLoggedOut) {
+    console.log('[webSocketService] 로그아웃 상태로 인해 재연결을 중단합니다.');
     return;
   }
 
@@ -79,14 +137,18 @@ function connectWebSocket() {
   const socket = new SockJS(wsUrl);
   stompClient = Stomp.over(socket);
 
-  // 하트비트 설정
-  stompClient.heartbeat.outgoing = 20000; // 20초마다 클라이언트 -> 서버
-  stompClient.heartbeat.incoming = 20000; // 20초마다 서버 -> 클라이언트
+  // 하트비트 설정 (간격 늘림)
+  stompClient.heartbeat.outgoing = 60000; // 20초에서 60초로 변경
+  stompClient.heartbeat.incoming = 60000; // 20초에서 60초로 변경
 
-  // 디버그 모드 활성화
-  stompClient.debug = function (str) {
-    console.log('STOMP: ' + str);
-  };
+  // 디버그 모드 (개발 환경에서만)
+  if (import.meta.env.DEV) {
+    stompClient.debug = function (str) {
+      console.log('STOMP: ' + str);
+    };
+  } else {
+    stompClient.debug = null; // 프로덕션에서는 디버그 비활성화
+  }
 
   console.log(`웹소켓 연결 시도... (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`, {
     url: wsUrl,
@@ -133,13 +195,21 @@ function connectWebSocket() {
       stopHeartbeat();
       reconnectAttempts++;
 
-      // 지수 백오프 재연결
-      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), 30000);
-      console.log(`${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+      if (!isLoggedOut) {
+        const delay = Math.min(
+          BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1),
+          MAX_RECONNECT_DELAY
+        );
+        console.log(
+          `${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+        );
 
-      setTimeout(() => {
-        connectWebSocket();
-      }, delay);
+        setTimeout(() => {
+          connectWebSocket();
+        }, delay);
+      } else {
+        console.log('[webSocketService] 로그아웃 상태로 인해 재연결을 중단합니다.');
+      }
     }
   );
 
@@ -149,8 +219,8 @@ function connectWebSocket() {
     notifyConnectionStateChange('disconnected');
     stopHeartbeat();
 
-    // 자동 재연결 시도
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+    // 로그아웃 상태가 아닐 때만 자동 재연결 시도
+    if (!isLoggedOut && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
       setTimeout(() => {
         connectWebSocket();
       }, BASE_RECONNECT_DELAY);
@@ -160,11 +230,23 @@ function connectWebSocket() {
 
 export function subscribeToChatRoom(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
-    console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
-    initializeWebSocket();
+    console.log('웹소켓 연결이 없습니다. 구독 정보를 저장하고 연결을 대기합니다.');
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장
     subscriptions[`chatroom.${chatRoomId}`] = { callback };
-    setTimeout(() => subscribeToChatRoom(chatRoomId, callback), 1000);
+
+    // 연결 시도 중이 아닐 때만 초기화 시도
+    if (connectionState !== 'connecting') {
+      initializeWebSocket()
+        .then(() => {
+          // 연결 완료 후 실제 구독 실행
+          if (subscriptions[`chatroom.${chatRoomId}`]) {
+            subscribeToChatRoom(chatRoomId, callback);
+          }
+        })
+        .catch(error => {
+          console.error('웹소켓 초기화 실패:', error);
+        });
+    }
     return;
   }
 
@@ -217,11 +299,23 @@ export function subscribeToChatRoom(chatRoomId, callback) {
 
 export function subscribeToReadStatus(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
-    console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
-    initializeWebSocket();
+    console.log('웹소켓 연결이 없습니다. 읽음 상태 구독 정보를 저장하고 연결을 대기합니다.');
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장
     subscriptions[`chatroom.${chatRoomId}.read`] = { callback };
-    setTimeout(() => subscribeToReadStatus(chatRoomId, callback), 1000);
+
+    // 연결 시도 중이 아닐 때만 초기화 시도
+    if (connectionState !== 'connecting') {
+      initializeWebSocket()
+        .then(() => {
+          // 연결 완료 후 실제 구독 실행
+          if (subscriptions[`chatroom.${chatRoomId}.read`]) {
+            subscribeToReadStatus(chatRoomId, callback);
+          }
+        })
+        .catch(error => {
+          console.error('웹소켓 초기화 실패:', error);
+        });
+    }
     return;
   }
 
@@ -331,18 +425,51 @@ export function unsubscribe(destination) {
 }
 
 export function disconnectWebSocket() {
+  console.log('[webSocketService] 웹소켓 연결 해제 시작');
+
+  // 로그아웃 상태로 설정하여 자동 재연결 방지
+  isLoggedOut = true;
+
+  // 하트비트 정지
+  stopHeartbeat();
+
   if (stompClient && stompClient.connected) {
+    console.log('[webSocketService] 연결된 웹소켓 해제 중...');
+
+    // 모든 구독 해제
     Object.keys(subscriptions).forEach(destination => {
       if (subscriptions[destination].subscription) {
         subscriptions[destination].subscription.unsubscribe();
+        console.log(`[webSocketService] 구독 해제: ${destination}`);
       }
     });
     subscriptions = {};
 
-    stompClient.disconnect();
-    stompClient = null;
-    console.log('웹소켓 연결 종료');
+    // 웹소켓 연결 해제 (콜백으로 완료 확인)
+    stompClient.disconnect(() => {
+      console.log('[webSocketService] STOMP 연결 해제 완료');
+    });
+
+    // 연결 상태 변경 알림
+    notifyConnectionStateChange('disconnected');
+    console.log('[webSocketService] 웹소켓 연결 종료 처리 완료');
+  } else {
+    console.log('[webSocketService] 이미 연결이 해제된 상태');
   }
+
+  // 콜백 배열 정리 (메모리 누수 방지)
+  connectionStateCallbacks = [];
+
+  // stompClient 초기화
+  stompClient = null;
+}
+
+// 새로운 로그인 시 상태 리셋
+export function resetWebSocketState() {
+  console.log('[webSocketService] 웹소켓 상태 리셋');
+  isLoggedOut = false;
+  reconnectAttempts = 0;
+  connectionStateCallbacks = [];
 }
 
 export function getWebSocketStatus() {
@@ -370,17 +497,31 @@ export function forceReconnect() {
 
 export function subscribeToUserStatus(callback) {
   if (!stompClient || !stompClient.connected) {
-    console.log('웹소켓 연결이 없습니다. 연결을 시도합니다.');
-    initializeWebSocket();
+    console.log('웹소켓 연결이 없습니다. 사용자 상태 구독 정보를 저장하고 연결을 대기합니다.');
     // 웹소켓 연결이 완료될 때까지 구독 정보 저장
     subscriptions['user.status'] = { callback };
-    setTimeout(() => subscribeToUserStatus(callback), 1000);
+
+    // 연결 시도 중이 아닐 때만 초기화 시도
+    if (connectionState !== 'connecting') {
+      initializeWebSocket()
+        .then(() => {
+          // 연결 완료 후 실제 구독 실행
+          if (subscriptions['user.status']) {
+            subscribeToUserStatus(callback);
+          }
+        })
+        .catch(error => {
+          console.error('웹소켓 초기화 실패:', error);
+        });
+    }
     return;
   }
 
   const destination = '/topic/status';
 
-  if (subscriptions['user.status']) {
+  // 이미 구독 중인지 확인
+  if (subscriptions['user.status'] && subscriptions['user.status'].subscription) {
+    console.log('[webSocketService] 사용자 상태 이미 구독 중, 기존 구독 해제 후 재구독');
     unsubscribe('user.status');
   }
 

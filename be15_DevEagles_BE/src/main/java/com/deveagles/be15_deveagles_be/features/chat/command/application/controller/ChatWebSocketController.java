@@ -224,24 +224,21 @@ public class ChatWebSocketController {
           e);
     }
 
-    // 3. ChatRoom의 participant lastReadMessage 업데이트 (폴백)
-    if (!redisSuccess && !mongoSuccess) {
-      try {
-        chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
-        log.info(
-            "User {} marked message {} as read in chatroom {} (ChatRoom fallback)",
-            userId,
-            messageId,
-            chatroomId);
-      } catch (Exception e) {
-        log.error(
-            "Failed to update read status in ChatRoom for user {} in chatroom {}: {}",
-            userId,
-            chatroomId,
-            e.getMessage(),
-            e);
-        return;
-      }
+    // 3. ChatRoom의 participant lastReadMessage 즉시 업데이트
+    try {
+      chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
+      log.debug(
+          "ChatRoom participant lastReadMessage updated: userId={}, messageId={}, chatroomId={}",
+          userId,
+          messageId,
+          chatroomId);
+    } catch (Exception e) {
+      log.error(
+          "Failed to update ChatRoom participant lastReadMessage: userId={}, messageId={}, chatroomId={}, error={}",
+          userId,
+          messageId,
+          chatroomId,
+          e.getMessage());
     }
 
     // 4. 읽음 상태 이벤트 전송
