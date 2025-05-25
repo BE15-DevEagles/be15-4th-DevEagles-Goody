@@ -15,6 +15,9 @@
   import BaseButton from '@/components/common/components/BaseButton.vue';
   import router from '@/router/index.js';
   import { useToast } from 'vue-toastification';
+  import TodoCreateModal from '@/features/todolist/components/TodoCreateModal.vue';
+
+  const isCreateModalOpen = ref(false);
 
   const selectedTodoId = ref(null);
   const isDetailModalOpen = ref(false);
@@ -165,11 +168,38 @@
               @update:current-page="page => (currentPage = page)"
             />
           </div>
-          <div v-if="worklogWritten === false" class="write-worklog-wrapper">
+          <div
+            v-if="worklogWritten === false"
+            class="write-worklog-wrapper"
+            :class="{ stacked: props.isSidebarCollapsed }"
+          >
             <BaseButton type="info" size="sm" @click="router.push('/worklog/create')">
               업무일지 작성하러 가기
             </BaseButton>
+
+            <!-- 사이드바 열려있으면 오른쪽 끝에 -->
+            <BaseButton
+              v-if="!props.isSidebarCollapsed"
+              type="primary"
+              size="sm"
+              class="ml-auto"
+              @click="isCreateModalOpen = true"
+            >
+              Todo 추가
+            </BaseButton>
           </div>
+
+          <!-- 사이드바 닫혀있을 때는 아래쪽에 추가 버튼 따로 표시 -->
+          <div v-if="props.isSidebarCollapsed" class="todo-add-button-wrapper">
+            <BaseButton type="primary" size="sm" @click="isCreateModalOpen = true">
+              Todo 추가
+            </BaseButton>
+          </div>
+
+          <TodoCreateModal
+            v-model="isCreateModalOpen"
+            @submitted="fetchTeamTodos(currentTeamId.value)"
+          />
           <TodoDetailModal
             v-model="isDetailModalOpen"
             :todo-id="selectedTodoId"
@@ -205,6 +235,32 @@
     padding: 0;
     background: var(--color-neutral-white);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  .write-worklog-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    margin-top: 1rem;
+    gap: 1rem;
+  }
+
+  .todo-bottom-button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .write-worklog-wrapper.stacked {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .todo-add-button-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
   }
 
   .calendar-wrapper {
