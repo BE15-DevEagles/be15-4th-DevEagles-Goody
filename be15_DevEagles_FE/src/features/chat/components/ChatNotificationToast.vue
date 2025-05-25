@@ -62,6 +62,7 @@
 
 <script setup>
   import { ref, onMounted, onUnmounted } from 'vue';
+  import { useToast } from 'vue-toastification';
 
   const props = defineProps({
     senderName: {
@@ -76,14 +77,15 @@
       type: Number,
       default: 8000,
     },
-    closeToast: {
-      type: Function,
-      required: true,
-    },
   });
 
+  const toast = useToast();
   const progress = ref(100);
   let interval = null;
+
+  const closeToast = () => {
+    toast.clear();
+  };
 
   onMounted(() => {
     const step = 100 / (props.timeout / 100);
@@ -92,7 +94,7 @@
       progress.value -= step;
       if (progress.value <= 0) {
         clearInterval(interval);
-        props.closeToast();
+        closeToast();
       }
     }, 100);
   });

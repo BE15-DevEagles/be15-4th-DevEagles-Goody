@@ -76,6 +76,7 @@
   import { useSidebar } from './composables/useSidebar';
   import { useTeamStore } from '@/store/team';
   import { useChatStore } from '@/store/chat';
+  import { useUserStatusStore } from '@/store/userStatus';
 
   import TeamMemberList from '@/features/team/components/TeamMemberList.vue';
   import ChatList from '@/features/chat/components/ChatList.vue';
@@ -84,6 +85,7 @@
 
   const teamStore = useTeamStore();
   const chatStore = useChatStore();
+  const userStatusStore = useUserStatusStore();
 
   // 팀원 목록
   const teamMembers = computed(() => {
@@ -164,6 +166,8 @@
   onMounted(async () => {
     // 채팅 스토어 초기화
     await chatStore.initialize();
+
+    // 사용자 상태 구독은 auth.js에서 처리하므로 여기서는 제거
   });
 
   // 채팅창 닫기

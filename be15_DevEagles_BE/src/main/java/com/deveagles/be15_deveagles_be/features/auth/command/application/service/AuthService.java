@@ -18,4 +18,6 @@ public interface AuthService {
   void verifyAuthCode(String email, String authCode);
 
   String sendFindPwdEmail(UserFindPwdRequest request);
+
+  TokenResponse refreshToken(String refreshToken);
 }

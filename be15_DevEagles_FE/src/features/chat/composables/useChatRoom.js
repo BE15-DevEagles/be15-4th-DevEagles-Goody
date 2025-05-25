@@ -89,18 +89,14 @@ export function useChatRoom() {
         chatRoomId,
         content.trim(),
         authStore.userId,
-        authStore.userName || authStore.nickname
+        authStore.name
       );
 
       if (success) {
         console.log('[useChatRoom] 메시지 전송 성공');
 
         const tempMessage = {
-          ...createTempMessage(
-            content.trim(),
-            authStore.userId,
-            authStore.userName || authStore.nickname
-          ),
+          ...createTempMessage(content.trim(), authStore.userId, authStore.name),
           chatroomId: chatRoomId,
         };
 

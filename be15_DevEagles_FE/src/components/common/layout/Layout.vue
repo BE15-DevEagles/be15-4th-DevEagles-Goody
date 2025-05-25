@@ -15,8 +15,10 @@
 </template>
 
 <script setup>
-  import { ref, computed } from 'vue';
+  import { ref, computed, onMounted } from 'vue';
   import { useTeamStore } from '@/store/team';
+  import { useAuthStore } from '@/store/auth';
+  import { setupChat } from '@/features/chat/config/chatConfig';
   import Header from './Header.vue';
   import Sidebar from './Sidebar.vue';
   import TeamSidebar from './TeamSidebar.vue';
@@ -26,7 +28,9 @@
   import { useRoute } from 'vue-router';
 
   const teamStore = useTeamStore();
+  const authStore = useAuthStore();
   const isSidebarCollapsed = ref(false);
+
   const handleSidebarCollapse = val => {
     console.log('[Sidebar 상태] isSidebarCollapsed 변경됨 →', val);
     isSidebarCollapsed.value = val;
@@ -41,6 +45,19 @@
   const pageDescription = computed(() =>
     isMyPage.value ? '' : teamStore.currentTeam?.description || '팀 채널 소통 공간'
   );
+
+  // 채팅 초기화
+  onMounted(async () => {
+    // 인증된 사용자만 채팅 초기화
+    if (authStore.isAuthenticated) {
+      console.log('[Layout] 채팅 시스템 초기화 시작');
+
+      // 약간의 지연을 두고 채팅 초기화 (사용자 상태 초기화 완료 대기)
+      setTimeout(() => {
+        setupChat();
+      }, 1000);
+    }
+  });
 </script>
 
 <style>

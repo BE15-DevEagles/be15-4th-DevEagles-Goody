@@ -10,6 +10,8 @@ import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.Ch
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ReadReceipt;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatRoomRepository;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ReadReceiptRepository;
+import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
+import com.deveagles.be15_deveagles_be.features.user.command.application.service.UserCommandService;
 import java.security.Principal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -41,6 +43,7 @@ public class ChatWebSocketController {
   private final ReadReceiptRepository readReceiptRepository;
   private final SimpMessagingTemplate messagingTemplate;
   private final RedisTemplate<String, String> redisTemplate;
+  private final UserCommandService userCommandService;
 
   public ChatWebSocketController(
       ChatMessageService chatMessageService,
@@ -50,7 +53,8 @@ public class ChatWebSocketController {
       ChatRoomRepository chatRoomRepository,
       ReadReceiptRepository readReceiptRepository,
       SimpMessagingTemplate messagingTemplate,
-      RedisTemplate<String, String> redisTemplate) {
+      RedisTemplate<String, String> redisTemplate,
+      UserCommandService userCommandService) {
     this.chatMessageService = chatMessageService;
     this.chatRoomService = chatRoomService;
     this.aiChatService = aiChatService;
@@ -59,6 +63,7 @@ public class ChatWebSocketController {
     this.readReceiptRepository = readReceiptRepository;
     this.messagingTemplate = messagingTemplate;
     this.redisTemplate = redisTemplate;
+    this.userCommandService = userCommandService;
   }
 
   @MessageMapping("/chat.send")
@@ -66,20 +71,51 @@ public class ChatWebSocketController {
       @Payload ChatMessageRequest request,
       SimpMessageHeaderAccessor headerAccessor,
       Principal principal) {
-    ChatMessageRequest finalRequest;
-    if (principal != null && !principal.getName().equals(request.getSenderId())) {
-      finalRequest =
-          ChatMessageRequest.builder()
-              .chatroomId(request.getChatroomId())
-              .senderId(principal.getName())
-              .senderName(request.getSenderName())
-              .messageType(request.getMessageType())
-              .content(request.getContent())
-              .metadata(request.getMetadata())
-              .build();
-    } else {
-      finalRequest = request;
+
+    String senderId = principal != null ? principal.getName() : request.getSenderId();
+    String senderName = request.getSenderName();
+
+    // 사용자 이름이 없거나 "알 수 없는 사용자"인 경우 실제 사용자 정보 조회
+    if (senderName == null || senderName.trim().isEmpty() || "알 수 없는 사용자".equals(senderName)) {
+      try {
+        Long userId = Long.parseLong(senderId);
+        UserDetailResponse userDetail = userCommandService.getUserDetails(userId);
+        if (userDetail != null && userDetail.getUserName() != null) {
+          senderName = userDetail.getUserName();
+          log.info("사용자 이름 조회 성공: userId={}, userName={}", userId, senderName);
+        } else {
+          log.warn("사용자 정보를 찾을 수 없음: userId={}", userId);
+          senderName = "알 수 없는 사용자";
+        }
+      } catch (NumberFormatException e) {
+        log.error("잘못된 사용자 ID 형식: {}", senderId);
+        senderName = "알 수 없는 사용자";
+      } catch (Exception e) {
+        log.error("사용자 정보 조회 실패: userId={}, error={}", senderId, e.getMessage());
+        senderName = "알 수 없는 사용자";
+      }
     }
+
+    ChatMessageRequest finalRequest =
+        ChatMessageRequest.builder()
+            .chatroomId(request.getChatroomId())
+            .senderId(senderId)
+            .senderName(senderName)
+            .messageType(request.getMessageType())
+            .content(request.getContent())
+            .metadata(request.getMetadata())
+            .build();
+
+    log.info(
+        "메시지 전송: chatroomId={}, senderId={}, senderName={}, content={}",
+        finalRequest.getChatroomId(),
+        finalRequest.getSenderId(),
+        finalRequest.getSenderName(),
+        finalRequest.getContent() != null
+            ? finalRequest
+                .getContent()
+                .substring(0, Math.min(20, finalRequest.getContent().length()))
+            : "null");
 
     ChatMessageResponse userMessageResponse = chatMessageService.sendMessage(finalRequest);
 
@@ -188,24 +224,21 @@ public class ChatWebSocketController {
           e);
     }
 
-    // 3. ChatRoom의 participant lastReadMessage 업데이트 (폴백)
-    if (!redisSuccess && !mongoSuccess) {
-      try {
-        chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
-        log.info(
-            "User {} marked message {} as read in chatroom {} (ChatRoom fallback)",
-            userId,
-            messageId,
-            chatroomId);
-      } catch (Exception e) {
-        log.error(
-            "Failed to update read status in ChatRoom for user {} in chatroom {}: {}",
-            userId,
-            chatroomId,
-            e.getMessage(),
-            e);
-        return;
-      }
+    // 3. ChatRoom의 participant lastReadMessage 즉시 업데이트
+    try {
+      chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
+      log.debug(
+          "ChatRoom participant lastReadMessage updated: userId={}, messageId={}, chatroomId={}",
+          userId,
+          messageId,
+          chatroomId);
+    } catch (Exception e) {
+      log.error(
+          "Failed to update ChatRoom participant lastReadMessage: userId={}, messageId={}, chatroomId={}, error={}",
+          userId,
+          messageId,
+          chatroomId,
+          e.getMessage());
     }
 
     // 4. 읽음 상태 이벤트 전송

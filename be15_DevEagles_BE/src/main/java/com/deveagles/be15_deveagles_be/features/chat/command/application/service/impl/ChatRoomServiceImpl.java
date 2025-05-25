@@ -50,6 +50,16 @@ public class ChatRoomServiceImpl implements ChatRoomService {
       chatRoomValidator.validateDefaultChatRoomNotExists(request.getTeamId());
     }
 
+    // 1:1 채팅방인 경우 기존 채팅방 확인
+    if (request.getType() == ChatRoomType.DIRECT && request.getParticipantIds().size() == 2) {
+      Optional<ChatRoom> existingDirectChatRoom =
+          findExistingDirectChatRoom(request.getTeamId(), request.getParticipantIds());
+
+      if (existingDirectChatRoom.isPresent()) {
+        return ChatRoomResponse.from(existingDirectChatRoom.get());
+      }
+    }
+
     ChatRoom chatRoom =
         ChatRoomFactory.createRegularChatRoom(
             request.getTeamId(),
@@ -59,6 +69,27 @@ public class ChatRoomServiceImpl implements ChatRoomService {
             request.getParticipantIds());
 
     return chatRoomHelper.saveAndConvertToResponse(chatRoom);
+  }
+
+  private Optional<ChatRoom> findExistingDirectChatRoom(
+      String teamId, List<String> participantIds) {
+    List<ChatRoom> directChatRooms =
+        chatRoomRepository.findActiveChatRoomsByTeamIdAndType(teamId, ChatRoomType.DIRECT);
+
+    return directChatRooms.stream()
+        .filter(
+            chatRoom -> {
+              List<String> existingParticipantIds =
+                  chatRoom.getActiveParticipants().stream()
+                      .map(ChatRoom.Participant::getUserId)
+                      .sorted()
+                      .toList();
+
+              List<String> requestParticipantIds = participantIds.stream().sorted().toList();
+
+              return existingParticipantIds.equals(requestParticipantIds);
+            })
+        .findFirst();
   }
 
   @Override

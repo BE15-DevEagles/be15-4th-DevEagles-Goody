@@ -182,7 +182,6 @@
       <BaseButton class="btn btn-danger" @click="openCancelModal">취소</BaseButton>
     </div>
 
-    <!-- ✅ 모달 컴포넌트 -->
     <ConfirmModal
       v-model="showSubmitModal"
       title="제출 확인"
