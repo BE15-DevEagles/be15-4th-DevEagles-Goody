@@ -14,7 +14,6 @@ public interface MoodInquiryService {
 
   void sendMoodInquiryToAllUsers();
 
-  // 비즈니스 로직 일관성을 위한 추가 메서드들
   Optional<UserMoodHistory> getTodayMoodInquiry(String userId);
 
   Optional<UserMoodHistory> getTodayUnansweredInquiry(String userId);
@@ -22,4 +21,6 @@ public interface MoodInquiryService {
   boolean hasPendingMoodInquiry(String userId);
 
   Optional<String> getPendingInquiryId(String userId);
+
+  Optional<UserMoodHistory> getLatestMoodHistory(String userId);
 }

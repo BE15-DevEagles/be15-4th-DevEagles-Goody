@@ -3,6 +3,7 @@ package com.deveagles.be15_deveagles_be.features.team.query.application.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.MoodInquiryService;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.repository.TeamMemberRepository;
 import com.deveagles.be15_deveagles_be.features.team.query.dto.response.MyTeamListResponse;
 import com.deveagles.be15_deveagles_be.features.team.query.mapper.TeamMapper;
@@ -17,12 +18,16 @@ class MyTeamListTest {
 
   private TeamMapper teamMapper;
   private TeamMemberRepository teamMemberRepository;
+  private MoodInquiryService moodInquiryService;
   private TeamQueryServiceImpl teamQueryService;
 
   @BeforeEach
   void setUp() {
     teamMapper = mock(TeamMapper.class);
-    teamQueryService = new TeamQueryServiceImpl(teamMapper, teamMemberRepository);
+    teamMemberRepository = mock(TeamMemberRepository.class);
+    moodInquiryService = mock(MoodInquiryService.class);
+    teamQueryService =
+        new TeamQueryServiceImpl(teamMapper, teamMemberRepository, moodInquiryService);
   }
 
   @Test

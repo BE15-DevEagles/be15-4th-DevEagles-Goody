@@ -139,7 +139,6 @@ export function useChatRoom() {
     }
   };
 
-  // 채팅방 정보 업데이트 (마지막 메시지 등)
   const updateChatInfo = (chatRoomId, lastMessage) => {
     if (!chatRoomId || !lastMessage) return;
 

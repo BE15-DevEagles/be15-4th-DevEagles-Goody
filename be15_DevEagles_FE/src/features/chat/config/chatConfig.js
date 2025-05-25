@@ -65,12 +65,10 @@ if (typeof window !== 'undefined') {
 export const CHAT_CONSTANTS = {
   MAX_MESSAGE_LENGTH: 1000,
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-  // TODO : 상황 보기
+  // TODO : 상황 보기 안할 가능성 높음음
   //   MESSAGE_TYPES: {
   //     TEXT: 'TEXT',
   //     IMAGE: 'IMAGE',
   //     FILE: 'FILE',
-  // 	VIDEO: 'VIDEO',
-  // 	AUDIO: 'AUDIO',
   //   },
 };

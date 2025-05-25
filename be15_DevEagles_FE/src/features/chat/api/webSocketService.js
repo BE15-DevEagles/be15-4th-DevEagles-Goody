@@ -5,7 +5,49 @@ import { normalizeTimestamp } from '@/features/chat/utils/timeUtils.js';
 let stompClient = null;
 let subscriptions = {};
 let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
+let connectionState = 'disconnected'; // 'connecting', 'connected', 'disconnected', 'failed'
+let heartbeatInterval = null;
+let connectionStateCallbacks = [];
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_DELAY = 1000;
+
+// 연결 상태 변경 이벤트 구독
+export function onConnectionStateChange(callback) {
+  connectionStateCallbacks.push(callback);
+  callback(connectionState); // 현재 상태 즉시 전달
+}
+
+function notifyConnectionStateChange(newState) {
+  connectionState = newState;
+  connectionStateCallbacks.forEach(callback => {
+    try {
+      callback(newState);
+    } catch (error) {
+      console.error('연결 상태 콜백 오류:', error);
+    }
+  });
+}
+
+function startHeartbeat() {
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+
+  heartbeatInterval = setInterval(() => {
+    if (stompClient && stompClient.connected) {
+      // 하트비트 전송 (STOMP 자체 하트비트 사용)
+      console.log('WebSocket 하트비트 확인됨');
+    } else {
+      console.warn('WebSocket 연결이 끊어짐 - 재연결 시도');
+      connectWebSocket();
+    }
+  }, 30000); // 30초마다 확인
+}
+
+function stopHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+}
 
 export function initializeWebSocket() {
   if (stompClient && stompClient.connected) {
@@ -17,10 +59,18 @@ export function initializeWebSocket() {
 }
 
 function connectWebSocket() {
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.error('최대 재연결 시도 횟수를 초과했습니다.');
+  if (connectionState === 'connecting') {
+    console.log('이미 연결 시도 중입니다.');
     return;
   }
+
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+    console.error('최대 재연결 시도 횟수를 초과했습니다.');
+    notifyConnectionStateChange('failed');
+    return;
+  }
+
+  notifyConnectionStateChange('connecting');
 
   // 기본 API URL 설정
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -29,38 +79,70 @@ function connectWebSocket() {
   const socket = new SockJS(wsUrl);
   stompClient = Stomp.over(socket);
 
+  // 하트비트 설정
+  stompClient.heartbeat.outgoing = 20000; // 20초마다 클라이언트 -> 서버
+  stompClient.heartbeat.incoming = 20000; // 20초마다 서버 -> 클라이언트
+
   // 디버그 모드 활성화
   stompClient.debug = function (str) {
     console.log('STOMP: ' + str);
   };
 
-  console.log('웹소켓 연결 시도...', { url: wsUrl });
+  console.log(`웹소켓 연결 시도... (${reconnectAttempts + 1}/${MAX_RECONNECT_ATTEMPTS})`, {
+    url: wsUrl,
+  });
 
   stompClient.connect(
     {}, // 헤더 없이 연결
     () => {
       console.log('웹소켓 연결 성공');
       reconnectAttempts = 0;
+      notifyConnectionStateChange('connected');
+      startHeartbeat();
 
       // 기존 구독 복원
       const currentSubscriptions = { ...subscriptions };
       subscriptions = {};
       Object.keys(currentSubscriptions).forEach(destination => {
         const callback = currentSubscriptions[destination].callback;
-        subscribeToChatRoom(destination.split('.')[1], callback);
+        if (destination.includes('.read')) {
+          const chatRoomId = destination.split('.')[1];
+          subscribeToReadStatus(chatRoomId, callback);
+        } else {
+          const chatRoomId = destination.split('.')[1];
+          subscribeToChatRoom(chatRoomId, callback);
+        }
       });
     },
     error => {
       console.error('웹소켓 연결 실패:', error?.message || '알 수 없는 오류');
+      notifyConnectionStateChange('disconnected');
+      stopHeartbeat();
       reconnectAttempts++;
 
-      const delay = Math.min(1000 * (reconnectAttempts + 1), 10000);
+      // 지수 백오프 재연결
+      const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), 30000);
       console.log(`${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+
       setTimeout(() => {
         connectWebSocket();
       }, delay);
     }
   );
+
+  // 연결 해제 이벤트 처리
+  socket.addEventListener('close', () => {
+    console.log('웹소켓 연결이 종료되었습니다.');
+    notifyConnectionStateChange('disconnected');
+    stopHeartbeat();
+
+    // 자동 재연결 시도
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      setTimeout(() => {
+        connectWebSocket();
+      }, BASE_RECONNECT_DELAY);
+    }
+  });
 }
 
 export function subscribeToChatRoom(chatRoomId, callback) {
