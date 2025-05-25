@@ -8,6 +8,8 @@ import com.deveagles.be15_deveagles_be.features.todolist.query.application.servi
 import com.deveagles.be15_deveagles_be.features.todolist.query.application.service.TodoDdayQueryService;
 import com.deveagles.be15_deveagles_be.features.todolist.query.application.service.TodoQueryService;
 import com.deveagles.be15_deveagles_be.features.todolist.query.application.service.TodoTeamQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/todos")
 @RequiredArgsConstructor
+@Tag(name = "할 일(Todo)", description = "할 일 조회 관련 API")
 public class TodoQueryController {
 
   private final TodoCalendarQueryService calendarQueryService;
@@ -24,7 +27,7 @@ public class TodoQueryController {
   private final TodoTeamQueryService teamQueryService;
   private final TodoQueryService todoQueryService;
 
-  // 1️⃣ 내 캘린더용 일정 조회
+  @Operation(summary = "내 캘린더 일정 조회", description = "내가 작성한 모든 할 일을 조회합니다.")
   @GetMapping("/calendar/my")
   public ResponseEntity<ApiResponse<List<MyCalendarTodoResponse>>> getMyCalendarTodos(
       @AuthenticationPrincipal CustomUser user) {
@@ -33,7 +36,7 @@ public class TodoQueryController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  // 2️⃣ 내 미완료 todo 리스트 (D-Day 포함)
+  @Operation(summary = "내 미완료 Todo 목록 조회", description = "내 미완료 할 일 목록을 조회합니다.")
   @GetMapping("/dday/my")
   public ResponseEntity<ApiResponse<PagedResponse<MyDdayTodoResponse>>>
       getMyIncompleteTodosWithDday(
@@ -45,7 +48,7 @@ public class TodoQueryController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  // 3️⃣ 특정 팀의 전체 캘린더 일정 조회
+  @Operation(summary = "팀 캘린더 일정 조회", description = "특정 팀의 전체 할 일을 조회합니다.")
   @GetMapping("/calendar/team/{teamId}")
   public ResponseEntity<ApiResponse<List<TeamCalendarTodoResponse>>> getTeamCalendarTodos(
       @PathVariable Long teamId) {
@@ -53,7 +56,7 @@ public class TodoQueryController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  // 4️⃣ 특정 팀에서 내가 작성한 미완료 todo 리스트 (D-Day 포함)
+  @Operation(summary = "특정 팀의 내 미완료 Todo 목록 조회", description = "특정 팀에서 내가 작성한 미완료 할 일 목록을 조회합니다.")
   @GetMapping("/dday/team/{teamId}")
   public ResponseEntity<ApiResponse<PagedResponse<MyTeamDdayTodoResponse>>>
       getMyTeamIncompleteTodosWithDday(
@@ -66,7 +69,9 @@ public class TodoQueryController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  // 5️⃣ 특정 팀 todo 리스트 목록 조회
+  @Operation(
+      summary = "팀 Todo 목록 필터 조회",
+      description = "특정 팀의 할 일 목록을 작성자와 상태별로(완료, 미완료) 필터링하여 조회합니다.")
   @GetMapping("/team/{teamId}")
   public ResponseEntity<ApiResponse<PagedResponse<TeamFilteredTodoResponse>>>
       getTeamTodosByCondition(
@@ -82,7 +87,7 @@ public class TodoQueryController {
     return ResponseEntity.ok(ApiResponse.success(response));
   }
 
-  // 6. todo 상세 조회
+  @Operation(summary = "내 Todo 상세 조회", description = "내가 작성한 특정 할 일의 상세 정보를 조회합니다.")
   @GetMapping("/{todoId}")
   public ResponseEntity<TodoDetailResponse> getMyTodoDetail(
       @PathVariable Long todoId, @AuthenticationPrincipal CustomUser user) {
@@ -91,7 +96,7 @@ public class TodoQueryController {
     return ResponseEntity.ok(response);
   }
 
-  // 7. team todo 상세조회
+  @Operation(summary = "팀 Todo 상세 조회", description = "팀원의 할 일의 상세 정보를 조회합니다.")
   @GetMapping("/team/detail/{todoId}")
   public ApiResponse<TodoDetailResponse> getTeamTodoDetail(@PathVariable Long todoId) {
     TodoDetailResponse response = todoQueryService.getTeamTodoDetail(todoId);
