@@ -12,6 +12,9 @@
   import { format } from 'date-fns';
 
   const teamStore = useTeamStore();
+  const authStore = useAuthStore();
+  const router = useRouter();
+
   const worklogs = ref([]);
   const searchType = ref('all');
   const searchInput = ref('');
@@ -22,15 +25,13 @@
   const worklogScope = ref('mine');
   const pageSize = 10;
   const teamId = teamStore.currentTeamId;
-  const router = useRouter();
-  const authStore = useAuthStore();
 
   function goToCreatePage() {
     router.push({
       name: 'WorklogCreate',
       query: {
         username: authStore.name,
-        teamId: teamStore.currentTeamId,
+        teamId: teamId,
       },
     });
   }
@@ -48,7 +49,8 @@
   }
 
   function clearDates() {
-    dateRange.value = [null, null];
+    dateRange.value = [new Date(2020, 0, 1), new Date()];
+    triggerSearch();
   }
 
   function switchScope(scope) {
@@ -109,13 +111,19 @@
     }
   }
 
-  onMounted(fetchWorklogs);
+  // ✅ 초기 로딩 시 오늘 날짜로 설정 & 호출
+  onMounted(() => {
+    dateRange.value = [new Date(2020, 0, 1), new Date()];
+    fetchWorklogs();
+  });
 
+  // ✅ 정렬 바뀔 때
   watch(sortType, () => {
     currentPage.value = 1;
     fetchWorklogs();
   });
 
+  // ✅ 날짜 선택 시 자동 검색 & 순서 정리
   watch(dateRange, newVal => {
     if (newVal[0] && newVal[1]) {
       if (newVal[0] > newVal[1]) {
@@ -128,6 +136,7 @@
 
 <template>
   <section class="p-4">
+    <!-- 작성 + 탭 -->
     <div class="d-flex gap-2 mb-3 justify-content-between align-items-center">
       <BaseButton class="btn btn-accent" @click="goToCreatePage">업무일지 작성</BaseButton>
       <div class="d-flex gap-2">
@@ -146,7 +155,8 @@
       </div>
     </div>
 
-    <div class="d-flex flex-wrap align-items-end justify-content-center gap-3 mb-3">
+    <!-- 검색 + 정렬 + 달력 -->
+    <div class="d-flex flex-column gap-2 mb-3">
       <div class="d-flex align-items-center search-box">
         <select v-model="searchType" class="input select-type">
           <option value="all">전체</option>
@@ -181,34 +191,41 @@
         </div>
       </div>
 
-      <div class="d-flex gap-2 align-items-center filter-box">
-        <select v-model="sortType" class="input" style="max-width: 10rem; height: 100%">
-          <option value="latest">최신순</option>
-          <option value="created">등록순</option>
-        </select>
+      <div class="d-flex align-items-center justify-content-between gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <select v-model="sortType" class="input" style="min-width: 7rem; height: 42px">
+            <option value="latest">최신순</option>
+            <option value="created">등록순</option>
+          </select>
 
-        <!-- 달력 + 초기화 버튼을 하나의 div로 묶음 -->
-        <div class="d-flex align-items-center gap-2" style="min-width: 200px">
           <VueDatePicker
             v-model="dateRange"
             range
             :clearable="true"
+            :min-date="new Date(2020, 0, 1)"
+            :max-date="new Date()"
             :enable-time-picker="false"
-            teleport="body"
+            :start-date="new Date()"
             placeholder="날짜 선택"
-            class="datepicker-input w-100"
+            class="datepicker-input"
+            :format="'yyyy-MM-dd'"
+            :preview-format="'yyyy-MM-dd'"
+            teleport="body"
           />
-          <BaseButton class="btn btn-sm btn-gray" @click="clearDates">초기화</BaseButton>
         </div>
+
+        <BaseButton class="btn-initialize" @click="clearDates">초기화</BaseButton>
       </div>
     </div>
+
+    <!-- 테이블 -->
     <div class="table-responsive">
       <table class="table table-striped text-center w-100" style="table-layout: fixed">
         <thead>
           <tr>
-            <th style="width: 20%; text-align: center">작성자</th>
-            <th style="width: 60%; text-align: center">제목</th>
-            <th style="width: 20%; text-align: center">작성일자</th>
+            <th style="width: 20%">작성자</th>
+            <th style="width: 60%">제목</th>
+            <th style="width: 20%">작성일자</th>
           </tr>
         </thead>
         <tbody>
@@ -246,6 +263,24 @@
     background: var(--color-primary-main);
     color: var(--color-neutral-white);
   }
+
+  .search-box {
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    height: 42px;
+    min-width: 400px;
+    flex-grow: 1;
+  }
+
+  .select-type {
+    border: none;
+    border-right: 1px solid var(--color-gray-300);
+    border-radius: 0;
+    height: 100%;
+    max-width: 7rem;
+  }
+
   .search-icon {
     position: absolute;
     right: 1rem;
@@ -257,46 +292,82 @@
     align-items: center;
     justify-content: center;
   }
+
   .btn-accent {
-    background-color: var(--color-primary-500) !important;
-    color: var(--color-neutral-white) !important;
+    background-color: var(--color-primary-500);
+    color: var(--color-neutral-white);
     border: none;
   }
+
   .btn-accent:hover {
-    background-color: var(--color-primary-500) !important;
-    color: var(--color-neutral-white) !important;
+    background-color: var(--color-primary-400);
   }
-  .search-box {
-    border: 1px solid var(--color-gray-300);
-    border-radius: 0.5rem;
-    overflow: hidden;
-    height: 42px;
-    min-width: 400px;
-    flex-grow: 1;
-  }
-  .select-type {
-    border: none;
-    border-right: 1px solid var(--color-gray-300);
-    border-radius: 0;
-    height: 100%;
-    max-width: 7rem;
-  }
+
   .datepicker-input {
     height: 42px;
     width: 100%;
-    min-width: 200px;
+    min-width: 300px;
     padding: 0 12px;
     font-size: 14px;
     font-weight: 400;
     box-sizing: border-box;
-
-    /* ✅ 달력 배경 없애기 */
     background-color: transparent;
-    border: none;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
   }
 
-  /* ✅ 왼쪽 정렬 */
-  .filter-box {
-    justify-content: flex-start !important;
+  .btn-initialize {
+    background-color: var(--color-primary-main);
+    color: var(--color-neutral-white);
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    white-space: nowrap;
+  }
+
+  ::v-deep(.dp__main) {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+    padding: 0 !important;
+  }
+
+  /* 아이콘 padding 없애기 */
+  ::v-deep(.dp__input_wrap) {
+    border: 1px solid var(--color-gray-300) !important;
+    border-radius: 0.5rem !important;
+    background-color: var(--color-neutral-white) !important;
+    padding: 8px 12px 8px 60px !important;
+    display: flex;
+    align-items: center;
+    height: 42px;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  ::v-deep(.dp__input) {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-neutral-dark);
+    width: 100%;
+    padding-left: 100px !important; /* 아이콘과 날짜 텍스트 간 미세 간격 확보 */
+  }
+
+  ::v-deep(.dp__input_icon_pad) {
+    padding-left: 0 !important;
+  }
+
+  ::v-deep(.dp__input_icon) {
+    position: absolute !important;
+    z-index: 1;
+    pointer-events: none;
+    color: var(--color-gray-500);
+    display: flex;
+    align-items: center;
+    font-size: 16px;
   }
 </style>
