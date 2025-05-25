@@ -25,8 +25,9 @@
     }
   }
 
-  function handleCommentAdded() {
-    loadComments();
+  // ✅ 댓글 등록 후, 실시간으로 목록에 반영
+  function handleCommentAdded(newComment) {
+    comments.value.unshift(newComment); // 목록 가장 앞에 추가
   }
 
   onMounted(() => {
