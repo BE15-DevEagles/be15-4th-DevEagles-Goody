@@ -129,6 +129,17 @@ public class AuthController {
     }
   }
 
+  @PostMapping("/refresh")
+  public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(
+      @CookieValue(name = "refreshToken", required = false) String refreshToken // HttpOnly 쿠키에서 읽어옴
+      ) {
+    if (refreshToken == null) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // refreshToken이 없으면 401 반환
+    }
+    TokenResponse tokenResponse = authService.refreshToken(refreshToken);
+    return buildTokenResponse(tokenResponse);
+  }
+
   private ResponseEntity<ApiResponse<TokenResponse>> buildTokenResponse(TokenResponse response) {
 
     ResponseCookie cookie = createRefreshTokenCookie(response.getRefreshToken());
