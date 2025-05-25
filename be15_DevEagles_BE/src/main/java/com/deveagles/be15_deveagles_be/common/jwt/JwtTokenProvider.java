@@ -91,6 +91,10 @@ public class JwtTokenProvider {
         .compact();
   }
 
+  public long getRefreshExpiration() {
+    return jwtRefreshExpiration;
+  }
+
   public boolean validateToken(String token) {
     try {
       Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
