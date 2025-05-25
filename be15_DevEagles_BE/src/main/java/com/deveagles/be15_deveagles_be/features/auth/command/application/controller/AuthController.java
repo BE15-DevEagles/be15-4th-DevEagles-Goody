@@ -12,6 +12,8 @@ import com.deveagles.be15_deveagles_be.features.user.command.domain.aggregate.Us
 import com.deveagles.be15_deveagles_be.features.user.command.domain.exception.UserBusinessException;
 import com.deveagles.be15_deveagles_be.features.user.command.domain.exception.UserErrorCode;
 import com.deveagles.be15_deveagles_be.features.user.command.repository.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Auth 관련 API")
 public class AuthController {
 
   private final AuthService authService;
@@ -34,6 +37,7 @@ public class AuthController {
   private final MailService mailService;
   private final UserRepository userRepository;
 
+  @Operation(summary = "로그인", description = "사용자가 사이트에 로그인합니다.")
   @PostMapping("/login")
   public ResponseEntity<ApiResponse<TokenResponse>> login(
       @RequestBody @Valid LoginRequest request) {
@@ -43,6 +47,7 @@ public class AuthController {
     return buildTokenResponse(response);
   }
 
+  @Operation(summary = "로그아웃", description = "사용자가 사이트에서 로그아웃합니다.")
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
       @CookieValue(name = "refreshToken", required = false) String refreshToken,
@@ -60,6 +65,7 @@ public class AuthController {
         .body(ApiResponse.success(null));
   }
 
+  @Operation(summary = "아이디 찾기", description = "사용자가 가입한 아이디 정보를 조회합니다.")
   @PostMapping("/findid")
   public ResponseEntity<ApiResponse<UserFindIdResponse>> findId(
       @RequestBody @Valid UserFindIdRequest request) {
@@ -69,6 +75,7 @@ public class AuthController {
     return ResponseEntity.ok().body(ApiResponse.success(response));
   }
 
+  @Operation(summary = "비밀번호 인증 요청", description = "사용자의 비밀번호 변경을 위한 인증을 요청합니다.")
   @PostMapping("/findpwd")
   public ResponseEntity<ApiResponse<Void>> findPwd(@RequestBody @Valid UserFindPwdRequest request) {
 
@@ -78,6 +85,7 @@ public class AuthController {
     return ResponseEntity.ok().body(ApiResponse.success(null));
   }
 
+  @Operation(summary = "사용자 상태 확인", description = "사용자의 인증 상태를 확인합니다.")
   @PostMapping("/valid")
   public ResponseEntity<ApiResponse<Boolean>> validUserStatus(
       @AuthenticationPrincipal CustomUser customUser) {
@@ -91,6 +99,7 @@ public class AuthController {
     return ResponseEntity.ok().body(ApiResponse.success(is_valid));
   }
 
+  @Operation(summary = "사용자 인증 메일 전송", description = "사용자 인증을 위한 메일을 전송합니다.")
   @PostMapping("/sendauth")
   public ResponseEntity<ApiResponse<Void>> sendAuthEmail(
       @RequestBody @Valid SendAuthEmailRequest request) {
@@ -115,6 +124,7 @@ public class AuthController {
     }
   }
 
+  @Operation(summary = "사용자 인증", description = "사용자가 전달 받은 인증코드를 통해 본인 인증을 합니다.")
   @PostMapping("/verify")
   public ResponseEntity<ApiResponse<Void>> verify(@RequestBody @Valid UserVerifyRequest request) {
 
