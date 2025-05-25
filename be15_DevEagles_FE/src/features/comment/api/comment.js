@@ -11,3 +11,8 @@ export const postComment = (worklogId, commentContent) => {
   };
   return api.post('/comments', requestBody);
 };
+export const updateComment = (commentId, commentContent) => {
+  return api.put(`/comments/${commentId}`, {
+    commentContent,
+  });
+};
