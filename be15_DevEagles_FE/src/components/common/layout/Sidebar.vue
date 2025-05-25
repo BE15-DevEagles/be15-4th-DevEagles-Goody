@@ -51,14 +51,8 @@
             >
               <span class="mr-3 font-one-liner">#</span>
               <span class="font-one-liner truncate">{{ channel.name }}</span>
-              <!-- ▼ 아이콘: 타임캡슐 메뉴만 표시 -->
-              <span v-if="channel.name === '타임캡슐'" class="ml-auto">
-                <svg width="16" height="16" fill="currentColor">
-                  <path d="M4 6l4 4 4-4" />
-                </svg>
-              </span>
             </div>
-            <!-- 타임캡슐 하위 메뉴 -->
+            <!-- 타임캡슐 하위 메뉴 (내 기능만 추가) -->
             <ul v-if="channel.name === '타임캡슐' && timecapsuleOpen" class="ml-6">
               <li
                 class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200 font-one-liner truncate text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white"
@@ -91,17 +85,18 @@
 
   // 아이콘 SVG 문자열
   const homeIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-</svg>`;
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+  </svg>`;
 
   const projectIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-</svg>`;
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+  </svg>`;
 
   const calendarIcon = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-</svg>`;
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+  </svg>`;
 
+  // Mock 데이터
   const workspaceItems = ref([
     { name: '홈', icon: homeIcon, route: '/calendar/my', active: false },
   ]);
@@ -111,15 +106,6 @@
       router.push(item.route);
     }
   }
-
-  const channels = ref([
-    { name: '팀 정보', icon: projectIcon, active: false },
-    { name: '캘린더', icon: calendarIcon, active: false },
-    { name: '업무일지', active: false },
-    { name: 'Todo 목록', active: false },
-    { name: '타임캡슐', active: false },
-    { name: '룰렛', active: false },
-  ]);
 
   function handleChannelClick(channel) {
     switch (channel.name) {
@@ -146,7 +132,15 @@
     }
   }
 
-  // 타임캡슐 하위 메뉴 토글 상태
+  const channels = ref([
+    { name: '팀 정보', icon: projectIcon, active: false },
+    { name: '캘린더', icon: calendarIcon, active: false },
+    { name: '업무일지', active: false },
+    { name: 'Todo 목록', active: false },
+    { name: '타임캡슐', active: false },
+    { name: '룰렛', active: false },
+  ]);
+
   const timecapsuleOpen = ref(false);
   function toggleTimecapsuleMenu() {
     timecapsuleOpen.value = !timecapsuleOpen.value;
