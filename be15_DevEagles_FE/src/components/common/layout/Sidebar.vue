@@ -51,8 +51,13 @@
             >
               <span class="mr-3 font-one-liner">#</span>
               <span class="font-one-liner truncate">{{ channel.name }}</span>
+              <span v-if="channel.name === '타임캡슐'" class="ml-auto">
+                <svg width="16" height="16" fill="currentColor">
+                  <path d="M4 6l4 4 4-4" />
+                </svg>
+              </span>
             </div>
-            <!-- 타임캡슐 하위 메뉴 (내 기능만 추가) -->
+            <!-- 타임캡슐 하위 메뉴 -->
             <ul v-if="channel.name === '타임캡슐' && timecapsuleOpen" class="ml-6">
               <li
                 class="flex items-center px-3 py-2 rounded-md mb-1 cursor-pointer transition-all duration-200 font-one-liner truncate text-[var(--color-gray-300)] hover:bg-[var(--color-gray-600)] hover:text-white"

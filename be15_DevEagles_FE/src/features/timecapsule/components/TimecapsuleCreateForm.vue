@@ -2,7 +2,7 @@
   <div class="timecapsule-form-container">
     <form @submit.prevent="openConfirmModal">
       <div class="form-row">
-        <label for="openDate">생성 날짜</label>
+        <label for="openDate">오픈할 날짜</label>
         <input id="openDate" v-model="form.openDate" type="date" :min="today" required />
       </div>
       <div class="form-row">
