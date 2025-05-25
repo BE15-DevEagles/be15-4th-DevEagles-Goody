@@ -93,10 +93,22 @@
   );
 
   const updateUser = () => {
-    emit('update:user', {
+    const payload = {
       ...localUser,
-      profileImage: profileFile.value,
-    });
+    };
+
+    // ✅ 새 이미지 등록 시
+    if (profileFile.value instanceof File) {
+      payload.profileImage = profileFile.value;
+    }
+
+    // ✅ 이미지 제거 시
+    if (!profileFile.value && !profilePreview.value) {
+      payload.profileImage = null;
+      payload.isProfileDeleted = true;
+    }
+
+    emit('update:user', payload);
   };
 
   const onFileUpdate = file => {

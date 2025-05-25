@@ -39,6 +39,7 @@
     phoneNumber: '',
     thumbnailUrl: '',
     profileImage: null,
+    isProfileDeleted: false,
   });
 
   const originalUser = reactive({
@@ -75,9 +76,18 @@
   };
 
   const handleUserChange = payload => {
-    Object.assign(user, payload);
-    errors.userName = '';
-    errors.phoneNumber = '';
+    if ('profileImage' in payload) {
+      user.profileImage = payload.profileImage;
+    }
+
+    if ('isProfileDeleted' in payload) {
+      user.isProfileDeleted = payload.isProfileDeleted;
+    } else {
+      user.isProfileDeleted = false; // ⭐️ 삭제 안 했으면 false로 초기화
+    }
+
+    user.userName = payload.userName;
+    user.phoneNumber = payload.phoneNumber;
   };
 
   const autoFormatPhone = value => {
@@ -119,10 +129,7 @@
   };
 
   const handleSave = async () => {
-    if (!validate()) {
-      console.log('❌ 유효성 검사 실패');
-      return;
-    }
+    if (!validate()) return;
 
     try {
       const formData = new FormData();
@@ -138,17 +145,18 @@
         })
       );
 
+      // 🔥 이미지 관련 분기 처리
       if (user.profileImage instanceof File) {
-        // 새 이미지 선택된 경우
+        // ✅ 새 이미지 업로드
         formData.append('profile', user.profileImage);
-      } else {
-        // 이미지 제거한 경우: 서버가 MultipartFile null 로 인식할 수 있도록
+      } else if (user.isProfileDeleted === true) {
+        // ✅ 명시적으로 삭제한 경우에만
         formData.append('profile', new Blob([], { type: 'application/octet-stream' }), '');
       }
 
       const res = await updateUserInfo(formData);
       const result = res.data.data;
-      console.log(res);
+
       isSuccessModalOpen.value = true;
       authStore.updateAuth({
         name: requestPayload.userName,
