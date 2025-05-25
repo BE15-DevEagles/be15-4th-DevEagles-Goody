@@ -11,6 +11,18 @@ export const workRoutes = [
     },
   },
   {
+    path: '/worklog/:id',
+    name: 'WorklogDetail',
+    component: () => import('@/features/worklog/views/WorklogDetailView.vue'),
+    meta: {
+      layout: 'default',
+      requiresAuth: true,
+      title: '업무일지 상세',
+      description: '선택한 업무일지를 자세히 볼 수 있어요.',
+    },
+  },
+
+  {
     path: '/worklog/create',
     name: 'WorklogCreate',
     component: () => import('@/features/worklog/views/WorkCreate.vue'),

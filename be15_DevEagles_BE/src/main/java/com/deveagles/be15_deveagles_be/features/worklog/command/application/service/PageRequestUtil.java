@@ -15,10 +15,13 @@ public class PageRequestUtil {
     int pageNumber = (page == null || page < 1) ? DEFAULT_PAGE : page - 1;
     int pageSize = (size == null || size < 1) ? DEFAULT_SIZE : size;
 
-    String sortBy = "writtenAt"; // 기본 정렬 기준
+    String sortBy = "writtenAt";
+    Sort.Direction direction = DEFAULT_DIRECTION; // 기본은 내림차순
+
     if ("created".equalsIgnoreCase(sortOption)) {
-      sortBy = "createdAt";
+      direction = Sort.Direction.ASC; // 방향만 오름차순
     }
-    return PageRequest.of(pageNumber, pageSize, Sort.by(DEFAULT_DIRECTION, sortBy));
+
+    return PageRequest.of(pageNumber, pageSize, Sort.by(direction, sortBy));
   }
 }

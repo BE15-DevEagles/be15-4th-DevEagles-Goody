@@ -7,6 +7,7 @@ import lombok.Getter;
 
 @Getter
 public class FindInfoRequest {
+  private String sort;
   private int page = 1;
   private int size = 10;
   private Long teamId;

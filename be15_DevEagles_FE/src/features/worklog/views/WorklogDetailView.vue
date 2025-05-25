@@ -77,8 +77,7 @@
       <!-- 댓글 영역 -->
       <div class="bg-white p-6 rounded-lg shadow border border-gray-200">
         <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">💬 댓글</h2>
-        <CommentForm :worklog-id="worklogId" @comment-added="refreshComments" />
-        <CommentList :key="commentListKey" :worklog-id="worklogId" />
+        <CommentList :worklog-id="Number(worklogId)" />
       </div>
     </div>
   </section>
