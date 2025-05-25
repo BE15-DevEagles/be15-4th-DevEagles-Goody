@@ -103,39 +103,62 @@
   });
 
   const handleLogout = async () => {
-    try {
-      console.log('[Header] 로그아웃 시작');
+    console.log('[Header] 로그아웃 시작');
 
+    let logoutUserStatusSuccess = false;
+
+    try {
       // 1. 먼저 사용자 상태 스토어 리셋 (웹소켓 구독 해제 포함)
       userStatusStore.reset();
       console.log('[Header] 사용자 상태 스토어 리셋 완료');
 
-      // 2. 백엔드에 오프라인 상태 알림 (Redis에서 사용자 제거)
-      await logoutUserStatus();
-      console.log('[Header] 사용자 오프라인 상태 변경 완료');
+      // 2. 백엔드에 오프라인 상태 알림 (Redis에서 사용자 제거) - JWT 토큰이 유효할 때 먼저 실행
+      try {
+        logoutUserStatusSuccess = await logoutUserStatus();
+        console.log(
+          '[Header] 사용자 오프라인 상태 변경:',
+          logoutUserStatusSuccess ? '성공' : '실패'
+        );
+      } catch (statusError) {
+        console.warn('[Header] 사용자 오프라인 상태 변경 실패:', statusError);
+      }
 
       // 3. 웹소켓 연결 해제
       disconnectWebSocket();
       console.log('[Header] 웹소켓 연결 해제 완료');
 
-      // 4. 서버에 로그아웃 요청
-      await logout();
-      console.log('[Header] 서버 로그아웃 완료');
-
-      // 5. 인증 정보 삭제
+      // 4. 서버에 로그아웃 요청 (JWT 토큰 무효화)
+      try {
+        await logout();
+        console.log('[Header] 서버 로그아웃 완료');
+      } catch (logoutError) {
+        console.warn('[Header] 서버 로그아웃 실패:', logoutError);
+      }
+    } catch (error) {
+      console.error('[Header] 로그아웃 처리 중 오류:', error);
+    } finally {
+      // 5. 항상 실행되는 클라이언트 정리
       authStore.clearAuth();
       console.log('[Header] 인증 정보 삭제 완료');
 
       // 6. 로그인 페이지로 이동
       router.push('/login');
-    } catch (error) {
-      console.error('로그아웃 실패:', error);
-      // 에러가 발생해도 클라이언트 정리는 수행
-      userStatusStore.reset();
-      await logoutUserStatus();
-      disconnectWebSocket();
-      authStore.clearAuth();
-      router.push('/login');
+
+      // 7. 오프라인 상태 처리가 실패했다면 강제로 한 번 더 시도 (토큰 없이)
+      if (!logoutUserStatusSuccess) {
+        console.log('[Header] 오프라인 상태 처리 재시도');
+        setTimeout(async () => {
+          try {
+            // 토큰 없이 직접 스토어에서 현재 사용자 제거
+            const currentUserId = authStore.userId;
+            if (currentUserId) {
+              userStatusStore.updateUserStatus(currentUserId, false);
+            }
+          } catch (retryError) {
+            console.warn('[Header] 오프라인 상태 재시도 실패:', retryError);
+          }
+        }, 1000);
+      }
     }
   };
 

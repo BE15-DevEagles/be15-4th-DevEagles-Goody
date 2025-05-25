@@ -5,7 +5,6 @@ import { getUserAiChatRooms } from '@/features/chat/api/aiChatService';
 import {
   initializeWebSocket,
   subscribeToChatRoom,
-  subscribeToReadStatus,
   sendWebSocketMessage,
   disconnectWebSocket,
   isWebSocketConnected,
@@ -75,14 +74,6 @@ export const useChatStore = defineStore('chat', {
               content: message.content?.substring(0, 20),
             });
             this.handleIncomingMessage(message);
-          });
-
-          subscribeToReadStatus(chat.id, readStatus => {
-            console.log('[setupGlobalMessageHandling] 전역 읽음 상태 수신:', {
-              chatId: chat.id,
-              readStatus,
-            });
-            this.handleReadStatusUpdate(readStatus);
           });
         }
       });
@@ -195,6 +186,7 @@ export const useChatStore = defineStore('chat', {
       this.currentChatId = chatId;
       await this.markChatAsRead(chatId);
 
+      // 웹소켓 구독 (연결 상태 확인 후 재시도)
       const subscribeWithRetry = (retryCount = 0) => {
         if (isWebSocketConnected()) {
           subscribeToChatRoom(chatId, message => {
@@ -223,24 +215,6 @@ export const useChatStore = defineStore('chat', {
           await markAsRead(chatId);
         } catch (error) {
           console.error('읽음 표시 실패:', error);
-        }
-      }
-    },
-
-    // 읽음 상태 변경 처리 (WebSocket 이벤트용)
-    handleReadStatusUpdate(readStatus) {
-      const { chatroomId, userId } = readStatus;
-      const authStore = useAuthStore();
-
-      // 다른 사용자가 읽음 처리한 경우, 내가 현재 채팅방에 있다면 읽지 않은 메시지 수 감소
-      if (userId !== authStore.userId && this.currentChatId === chatroomId) {
-        const chatIndex = this.chats.findIndex(c => c.id === chatroomId);
-        if (chatIndex > -1 && this.chats[chatIndex].unreadCount > 0) {
-          this.chats[chatIndex].unreadCount = Math.max(0, this.chats[chatIndex].unreadCount - 1);
-          console.log('[handleReadStatusUpdate] 읽지 않은 메시지 수 감소:', {
-            chatroomId,
-            newUnreadCount: this.chats[chatIndex].unreadCount,
-          });
         }
       }
     },

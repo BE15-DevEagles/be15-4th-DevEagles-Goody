@@ -87,24 +87,37 @@ public class WebSocketEventHandler {
       boolean userStillConnected = connectedUsers.values().contains(userId);
 
       if (!userStillConnected) {
+        // 짧은 지연 후 처리 (API 로그아웃과의 경합 조건 방지)
         try {
-          // Redis에서 사용자 제거
-          Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
-          logger.info(
-              "User {} removed from online users in Redis. Removed count: {}", userId, removed);
+          Thread.sleep(500); // 500ms 대기
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
 
-          // 실제로 제거된 경우에만 오프라인 상태 브로드캐스트
-          if (removed != null && removed > 0) {
-            notifyUserStatusChange(userId, false);
-            logger.info("User {} offline status broadcasted to all users.", userId);
+        try {
+          // Redis에서 사용자 상태 확인 후 제거
+          Boolean isOnline = redisTemplate.opsForSet().isMember(REDIS_KEY_ONLINE_USERS, userId);
+
+          if (Boolean.TRUE.equals(isOnline)) {
+            Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
+            logger.info(
+                "User {} removed from online users in Redis. Removed count: {}", userId, removed);
+
+            // 실제로 제거된 경우에만 오프라인 상태 브로드캐스트
+            if (removed != null && removed > 0) {
+              notifyUserStatusChange(userId, false);
+              logger.info("User {} offline status broadcasted to all users.", userId);
+            }
           } else {
-            logger.warn("User {} was not found in Redis online users set.", userId);
+            logger.info(
+                "User {} was already removed from Redis online users (likely by API logout).",
+                userId);
           }
         } catch (Exception e) {
           logger.error(
               "Failed to remove user {} from online_users in Redis: {}", userId, e.getMessage(), e);
 
-          // Redis 실패 시에도 오프라인 상태는 브로드캐스트
+          // Redis 실패 시에도 오프라인 상태는 브로드캐스트 (중복 방지를 위해 한 번만)
           try {
             notifyUserStatusChange(userId, false);
             logger.info("User {} offline status broadcasted despite Redis error.", userId);

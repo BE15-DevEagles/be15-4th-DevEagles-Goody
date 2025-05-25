@@ -167,7 +167,8 @@
     // 채팅 스토어 초기화
     await chatStore.initialize();
 
-    // 사용자 상태 구독은 auth.js에서 처리하므로 여기서는 제거
+    // 사용자 상태 구독 초기화
+    userStatusStore.initializeUserStatusSubscription();
   });
 
   // 채팅창 닫기
