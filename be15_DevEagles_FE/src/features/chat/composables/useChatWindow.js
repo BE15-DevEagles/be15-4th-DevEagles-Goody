@@ -6,7 +6,7 @@ export function useChatWindow() {
 
   const initializeChat = async (
     chatId,
-    { loadChatHistory, setMessages, subscribeToChat, markChatAsRead, clearError, onReady }
+    { loadChatHistory, setMessages, markChatAsRead, clearError, onReady }
   ) => {
     if (!chatId) {
       console.warn('[useChatWindow] 채팅방 ID가 없습니다.');
@@ -28,9 +28,6 @@ export function useChatWindow() {
         console.log('[useChatWindow] 초기 메시지 없음');
       }
 
-      // WebSocket 구독
-      subscribeToChat(chatId);
-
       // 채팅방 읽음 처리
       await markChatAsRead(chatId);
 
@@ -39,7 +36,7 @@ export function useChatWindow() {
         onReady();
       }
 
-      console.log('[useChatWindow] 채팅 초기화 완료');
+      console.log('[useChatWindow] 채팅 초기화 완료 (전역 웹소켓 구독 사용)');
     } catch (err) {
       console.error('[useChatWindow] 채팅 초기화 실패:', err);
       throw err;

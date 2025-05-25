@@ -160,9 +160,18 @@
     }
   );
 
+  // 컴포넌트 마운트 시 초기화
+  onMounted(async () => {
+    // 채팅 스토어 초기화
+    await chatStore.initialize();
+  });
+
   // 채팅창 닫기
   const closeChat = () => {
     selectedChat.value = null;
+    // ChatWindow가 닫힐 때 currentChatId 초기화
+    chatStore.currentChatId = null;
+    console.log('[RightSidebar] 채팅창 닫힘, currentChatId 초기화');
   };
 
   // 채팅 선택
@@ -173,22 +182,32 @@
 
   // 팀원과 채팅 시작
   const startChatWithMember = async member => {
+    console.log('[RightSidebar] 팀원과 채팅 시작:', member);
+
     // 기존 1:1 채팅이 있는지 확인
     const existingChat = chatStore.chats.find(
-      c => c.type === 'DIRECT' && c.participants?.some(p => p.userId === member.id)
+      c => c.type === 'DIRECT' && c.participants?.some(p => p.userId === member.userId)
     );
 
     if (existingChat) {
+      console.log('[RightSidebar] 기존 채팅방 발견:', existingChat);
       await selectChat(existingChat);
     } else {
       // 새로운 1:1 채팅방 생성 요청
       try {
-        const newChat = await chatStore.startDirectChat(member.id, member.name, member.thumbnail);
+        console.log('[RightSidebar] 새 채팅방 생성 시도');
+        const newChat = await chatStore.startDirectChat(
+          member.userId,
+          member.userName,
+          member.userThumbnailUrl
+        );
         if (newChat) {
+          console.log('[RightSidebar] 새 채팅방 생성 완료:', newChat);
           await selectChat(newChat);
         }
       } catch (error) {
         console.error('채팅방 생성 실패:', error);
+        alert(`채팅방을 열 수 없습니다: ${error.message}`);
       }
     }
   };

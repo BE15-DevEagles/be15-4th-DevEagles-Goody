@@ -13,6 +13,36 @@ export async function getChatRooms() {
   }
 }
 
+export async function createChatRoom(request) {
+  try {
+    console.log('[chatService] 채팅방 생성 요청:', request);
+    console.log('[chatService] JSON 직렬화 테스트:', JSON.stringify(request));
+
+    // axios를 다시 사용하되 더 명시적으로 설정
+    const response = await api.post('/chatrooms', request, {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      transformRequest: [
+        function (data) {
+          return JSON.stringify(data);
+        },
+      ],
+    });
+
+    console.log('[chatService] 채팅방 생성 응답:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('채팅방 생성 실패:', error);
+    console.error('요청 데이터:', request);
+    if (error.response) {
+      console.error('응답 데이터:', error.response.data);
+      console.error('요청 설정:', error.config);
+    }
+    throw error;
+  }
+}
+
 export async function getChatHistory(chatRoomId, before = null, limit = 20) {
   try {
     console.log('[chatService] 채팅 히스토리 요청:', {
