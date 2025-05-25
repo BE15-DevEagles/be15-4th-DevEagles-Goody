@@ -1,0 +1,108 @@
+import { defineStore } from 'pinia';
+import { subscribeToUserStatus } from '@/features/chat/api/webSocketService';
+import { getOnlineUsers } from '@/features/chat/api/userStatusService';
+
+export const useUserStatusStore = defineStore('userStatus', {
+  state: () => ({
+    onlineUsers: new Set(), // 온라인 사용자 ID 집합
+    isInitialized: false,
+  }),
+
+  getters: {
+    isUserOnline: state => {
+      return userId => {
+        return state.onlineUsers.has(String(userId));
+      };
+    },
+
+    getOnlineUserCount: state => {
+      return state.onlineUsers.size;
+    },
+
+    getOnlineUserIds: state => {
+      return Array.from(state.onlineUsers);
+    },
+  },
+
+  actions: {
+    // 사용자 상태 업데이트
+    updateUserStatus(userId, isOnline) {
+      const userIdStr = String(userId);
+
+      if (isOnline) {
+        this.onlineUsers.add(userIdStr);
+        console.log(`[UserStatusStore] 사용자 ${userId} 온라인됨`);
+      } else {
+        this.onlineUsers.delete(userIdStr);
+        console.log(`[UserStatusStore] 사용자 ${userId} 오프라인됨`);
+      }
+
+      console.log(
+        `[UserStatusStore] 현재 온라인 사용자: ${this.onlineUsers.size}명`,
+        Array.from(this.onlineUsers)
+      );
+    },
+
+    // 초기 온라인 사용자 목록 로드
+    async loadInitialOnlineUsers() {
+      try {
+        console.log('[UserStatusStore] 초기 온라인 사용자 목록 로드 시작');
+        const onlineUserIds = await getOnlineUsers();
+
+        // 기존 온라인 사용자 목록 초기화
+        this.onlineUsers.clear();
+
+        // 새로운 온라인 사용자 목록 설정
+        onlineUserIds.forEach(userId => {
+          this.onlineUsers.add(String(userId));
+        });
+
+        console.log(`[UserStatusStore] 초기 온라인 사용자 ${this.onlineUsers.size}명 로드 완료`);
+      } catch (error) {
+        console.error('[UserStatusStore] 초기 온라인 사용자 목록 로드 실패:', error);
+      }
+    },
+
+    // 웹소켓 구독 초기화
+    async initializeUserStatusSubscription() {
+      if (this.isInitialized) {
+        console.log('[UserStatusStore] 이미 초기화됨');
+        return;
+      }
+
+      console.log('[UserStatusStore] 사용자 상태 구독 시작');
+
+      // 1. 먼저 현재 온라인 사용자 목록을 REST API로 가져오기
+      await this.loadInitialOnlineUsers();
+
+      // 2. 웹소켓 구독 시작
+      subscribeToUserStatus(statusMessage => {
+        console.log('[UserStatusStore] 상태 메시지 수신:', statusMessage);
+
+        if (
+          statusMessage &&
+          statusMessage.userId !== undefined &&
+          statusMessage.online !== undefined
+        ) {
+          this.updateUserStatus(statusMessage.userId, statusMessage.online);
+        } else {
+          console.warn('[UserStatusStore] 잘못된 상태 메시지 형식:', statusMessage);
+        }
+      });
+
+      this.isInitialized = true;
+    },
+
+    // 온라인 사용자 목록 새로고침
+    async refreshOnlineUsers() {
+      await this.loadInitialOnlineUsers();
+    },
+
+    // 초기화 상태 리셋
+    reset() {
+      this.onlineUsers.clear();
+      this.isInitialized = false;
+      console.log('[UserStatusStore] 상태 초기화됨');
+    },
+  },
+});

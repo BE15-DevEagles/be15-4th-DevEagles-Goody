@@ -42,19 +42,19 @@
               class="rounded-full bg-white h-8 w-8 overflow-hidden flex items-center justify-center border-2 border-white"
             >
               <img
-                v-if="userThumbnailUrl"
-                :src="userThumbnailUrl"
-                :alt="name"
+                v-if="user.userThumbnail"
+                :src="user.userThumbnail"
+                :alt="user.name"
                 class="w-full h-full object-cover"
               />
               <div
                 v-else
                 class="w-full h-full flex items-center justify-center bg-[var(--color-primary-300)] text-white font-one-liner-semibold"
               >
-                {{ name ? name.charAt(0) : '?' }}
+                {{ user.name ? user.name.charAt(0) : '?' }}
               </div>
             </div>
-            <span class="font-one-liner-semibold">{{ name }}</span>
+            <span class="font-one-liner-semibold">{{ user.name }}</span>
           </button>
 
           <!-- 드롭다운 메뉴 -->
@@ -85,22 +85,51 @@
 </template>
 
 <script setup>
+  import { ref } from 'vue';
   import { logout } from '@/features/user/api/user.js';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '@/store/auth.js';
-  import { storeToRefs } from 'pinia';
+  import { disconnectWebSocket } from '@/features/chat/api/webSocketService.js';
+  import { useUserStatusStore } from '@/store/userStatus.js';
 
   const router = useRouter();
   const authStore = useAuthStore();
-  const { name, userThumbnailUrl } = storeToRefs(authStore);
+  const userStatusStore = useUserStatusStore();
+
+  const user = ref({
+    name: authStore.name, // 예시 이름
+    userThumbnail: authStore.userThumbnailUrl, // 예시 (null이면 첫 글자 표시)
+  });
 
   const handleLogout = async () => {
     try {
+      console.log('[Header] 로그아웃 시작');
+
+      // 1. 먼저 웹소켓 연결 해제
+      disconnectWebSocket();
+      console.log('[Header] 웹소켓 연결 해제 완료');
+
+      // 2. 사용자 상태 스토어 리셋
+      userStatusStore.reset();
+      console.log('[Header] 사용자 상태 스토어 리셋 완료');
+
+      // 3. 서버에 로그아웃 요청
       await logout();
+      console.log('[Header] 서버 로그아웃 완료');
+
+      // 4. 인증 정보 삭제
       authStore.clearAuth();
+      console.log('[Header] 인증 정보 삭제 완료');
+
+      // 5. 로그인 페이지로 이동
       router.push('/login');
     } catch (error) {
       console.error('로그아웃 실패:', error);
+      // 에러가 발생해도 클라이언트 정리는 수행
+      disconnectWebSocket();
+      userStatusStore.reset();
+      authStore.clearAuth();
+      router.push('/login');
     }
   };
 

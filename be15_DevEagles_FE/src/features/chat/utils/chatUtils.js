@@ -3,9 +3,11 @@ import { formatLastMessageTime } from './timeUtils';
 export function getChatTypeClass(type) {
   switch (type) {
     case 'AI':
-      return 'bg-gradient-to-br from-blue-400 to-purple-500';
+      return 'bg-[var(--color-primary-400)]';
+    case 'TEAM':
+      return 'bg-[var(--color-success-300)]';
     case 'GROUP':
-      return 'bg-[var(--color-secondary-300)]';
+      return 'bg-[var(--color-warning-300)]';
     case 'DIRECT':
     default:
       return 'bg-[var(--color-primary-300)]';
@@ -15,6 +17,9 @@ export function getChatTypeClass(type) {
 export function getChatDisplayChar(chat) {
   if (chat.type === 'AI') {
     return '🤖';
+  }
+  if (chat.type === 'TEAM') {
+    return '👥';
   }
   return chat.name?.charAt(0)?.toUpperCase() || '?';
 }
@@ -67,6 +72,7 @@ export function groupChatsByDate(chats, getDateGroupKey) {
 export function groupChatsByType(chats) {
   const grouped = {
     AI: [],
+    TEAM: [],
     DIRECT: [],
     GROUP: [],
   };
@@ -127,15 +133,18 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
   const otherParticipant = otherParticipants[0];
   const currentUserParticipant = room.participants?.find(p => p.userId === currentUserId);
 
-  // AI 채팅방인 경우 기본 썸네일 설정
   let thumbnail = null;
   let displayName = room.name;
 
   if (room.type === 'AI') {
     thumbnail = '/assets/image/suri.jpg';
     displayName = '🤖 AI 어시스턴트';
+  } else if (room.type === 'TEAM') {
+    // 팀 전체 채팅방인 경우
+    displayName = room.name || '팀 전체 채팅방';
+    thumbnail = null; // 팀 채팅방은 기본 아바타 사용
   } else if (room.type === 'DIRECT' && otherParticipant) {
-    // 1:1 채팅방인 경우 팀원 정보에서 사용자 정보 찾기
+    // 1:1 채팅방인 경우 항상 상대방 이름을 표시
     const memberInfo = teamMembers.find(
       member => String(member.userId) === String(otherParticipant.userId)
     );
@@ -145,10 +154,27 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
       displayName = memberInfo.userName || memberInfo.nickname || '알 수 없는 사용자';
       thumbnail = memberInfo.userThumbnailUrl || memberInfo.profileImageUrl || null;
     } else {
-      // 팀원 정보가 없으면 기본값 사용
-      displayName = otherParticipant?.userName || '알 수 없는 사용자';
+      // 팀원 정보가 없으면 기본값 사용 (다른 팀 사용자일 가능성)
+      displayName = otherParticipant?.userName || '다른 팀 사용자';
       thumbnail = otherParticipant?.userThumbnail || otherParticipant?.userThumbnailUrl || null;
+
+      console.warn('[transformChatRoom] 현재 팀에 없는 사용자:', {
+        roomId: room.id,
+        roomType: room.type,
+        otherParticipantId: otherParticipant?.userId,
+        otherParticipantName: otherParticipant?.userName,
+        teamMemberCount: teamMembers.length,
+        teamMemberIds: teamMembers.map(m => m.userId),
+      });
     }
+
+    console.log('[transformChatRoom] 1:1 채팅방 이름 설정:', {
+      roomId: room.id,
+      roomName: room.name,
+      displayName: displayName,
+      otherParticipantId: otherParticipant?.userId,
+      memberInfo: memberInfo ? 'found' : 'not found',
+    });
   } else if (room.type === 'GROUP') {
     displayName = room.name || '그룹 채팅';
     thumbnail = null; // 그룹 채팅은 기본 아바타 사용
@@ -173,6 +199,8 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
     createdAt: room.createdAt,
     updatedAt: room.updatedAt,
     isAiChat: room.type === 'AI',
+    currentUserId: currentUserId, // 현재 사용자 ID 추가
+    teamId: room.teamId, // 팀 ID 추가
   };
 }
 
