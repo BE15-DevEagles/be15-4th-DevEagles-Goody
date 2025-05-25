@@ -52,7 +52,6 @@ public class JwtTokenProvider {
     Optional<User> findUser = userRepository.findUserByEmail(username);
     User user = findUser.get();
 
-    log.info("deletedAt before: " + user.getDeletedAt());
     boolean isReturnUser = false;
     if (user.getDeletedAt() != null) {
       user.returnUser();
@@ -82,10 +81,20 @@ public class JwtTokenProvider {
     Date now = new Date();
     Date expiration = new Date(now.getTime() + jwtRefreshExpiration);
 
+    Optional<User> findUser = userRepository.findUserByEmail(username);
+    User user = findUser.get();
+
+    Map<String, String> map = new HashMap<>();
+    map.put("type", "refresh");
+    map.put("name", user.getUserName());
+    map.put("userId", user.getUserId().toString());
+    map.put("userThumbnailUrl", user.getUserThumbnailUrl());
+    map.put("userStatus", user.getUserStatus().toString());
+
     return Jwts.builder()
         .subject(username)
         .issuedAt(now)
-        .claim("type", "refresh")
+        .claims(map)
         .expiration(expiration)
         .signWith(secretKey)
         .compact();
