@@ -128,7 +128,7 @@ export function getTotalUnreadCount(chats) {
   return chats.reduce((total, chat) => total + (chat.unreadCount || 0), 0);
 }
 
-export function transformChatRoom(room, currentUserId, teamMembers = []) {
+export function transformChatRoom(room, currentUserId, teamMembers = [], currentTeam = null) {
   const otherParticipants = room.participants?.filter(p => p.userId !== currentUserId) || [];
   const otherParticipant = otherParticipants[0];
   const currentUserParticipant = room.participants?.find(p => p.userId === currentUserId);
@@ -140,9 +140,9 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
     thumbnail = '/assets/image/suri.jpg';
     displayName = '수리AI';
   } else if (room.type === 'TEAM') {
-    // 팀 전체 채팅방인 경우
+    // 팀 전체 채팅방인 경우 - 팀 썸네일 사용
     displayName = room.name || '팀 전체 채팅방';
-    thumbnail = null; // 팀 채팅방은 기본 아바타 사용
+    thumbnail = currentTeam?.url || currentTeam?.thumbnailUrl || null; // 팀 썸네일 사용
   } else if (room.type === 'DIRECT' && otherParticipant) {
     // 1:1 채팅방인 경우 항상 상대방 이름을 표시
     const memberInfo = teamMembers.find(

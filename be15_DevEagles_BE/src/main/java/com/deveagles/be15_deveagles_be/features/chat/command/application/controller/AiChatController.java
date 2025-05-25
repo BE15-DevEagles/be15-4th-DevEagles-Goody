@@ -9,6 +9,10 @@ import com.deveagles.be15_deveagles_be.features.chat.command.application.service
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.MoodInquiryService;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.UserMoodHistory;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/ai-chat")
+@Tag(name = "AI 채팅", description = "AI 채팅 및 감정 분석 관리 API")
 public class AiChatController {
 
   private static final Logger log = LoggerFactory.getLogger(AiChatController.class);
@@ -48,6 +53,21 @@ public class AiChatController {
   }
 
   @PostMapping
+  @Operation(summary = "AI 채팅방 생성/조회", description = "사용자의 개인 AI 채팅방을 생성하거나 기존 채팅방을 조회합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201",
+            description = "AI 채팅방 생성/조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<ChatRoomResponse>> createOrGetAiChatRoom(
       @RequestParam String userId,
       @RequestParam(required = false, defaultValue = "수리AI") String aiName) {
@@ -71,6 +91,17 @@ public class AiChatController {
   }
 
   @GetMapping("/me")
+  @Operation(summary = "사용자 AI 채팅방 목록 조회", description = "사용자의 모든 AI 채팅방 목록을 조회합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "AI 채팅방 목록 조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<List<ChatRoomResponse>>> getUserAiChatRooms(
       @RequestParam String userId, @AuthenticationPrincipal CustomUser customUser) {
 
@@ -90,6 +121,21 @@ public class AiChatController {
   }
 
   @GetMapping("/{chatroomId}/messages")
+  @Operation(summary = "AI 채팅 메시지 조회", description = "특정 AI 채팅방의 메시지 목록을 조회합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "AI 채팅 메시지 조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<List<ChatMessageResponse>>> getAiChatMessages(
       @PathVariable String chatroomId,
       @RequestParam(required = false, defaultValue = "0") int page,
@@ -115,6 +161,21 @@ public class AiChatController {
   }
 
   @PostMapping("/mood-inquiry")
+  @Operation(summary = "기분 조사 생성", description = "사용자의 기분 조사를 생성합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "201",
+            description = "기분 조사 생성 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청 또는 이미 존재하는 조사",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<UserMoodHistory>> generateMoodInquiry(
       @RequestParam String userId, @AuthenticationPrincipal CustomUser customUser) {
 
@@ -143,6 +204,25 @@ public class AiChatController {
   }
 
   @PostMapping("/mood-answer")
+  @Operation(summary = "기분 답변 저장", description = "사용자의 기분 조사 답변을 저장합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "기분 답변 저장 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "404",
+            description = "조사를 찾을 수 없음",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<UserMoodHistory>> saveMoodAnswer(
       @RequestBody Map<String, String> requestBody,
       @AuthenticationPrincipal CustomUser customUser) {
@@ -176,6 +256,21 @@ public class AiChatController {
   }
 
   @GetMapping("/mood-history")
+  @Operation(summary = "기분 이력 조회", description = "사용자의 기분 분석 이력을 조회합니다")
+  @ApiResponses(
+      value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "기분 이력 조회 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "400",
+            description = "잘못된 요청",
+            content = @Content),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "500",
+            description = "서버 오류",
+            content = @Content)
+      })
   public ResponseEntity<ApiResponse<List<UserMoodHistory>>> getUserMoodHistory(
       @RequestParam String userId, @AuthenticationPrincipal CustomUser customUser) {
 
