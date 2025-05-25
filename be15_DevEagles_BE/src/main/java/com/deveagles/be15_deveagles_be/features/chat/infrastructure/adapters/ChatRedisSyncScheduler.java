@@ -116,4 +116,44 @@ public class ChatRedisSyncScheduler {
       log.error("Redis 데이터 정리 중 오류 발생: {}", e.getMessage(), e);
     }
   }
+
+  @Scheduled(cron = "0 */10 * * * *") // 10분마다 실행
+  public void cleanupInvalidOnlineUsers() {
+    log.info("유효하지 않은 온라인 사용자 데이터 정리 시작");
+
+    try {
+      Set<String> onlineUsers = redisTemplate.opsForSet().members(REDIS_ONLINE_USERS_KEY);
+
+      if (onlineUsers == null || onlineUsers.isEmpty()) {
+        log.info("정리할 온라인 사용자가 없습니다.");
+        return;
+      }
+
+      int removedCount = 0;
+
+      for (String userId : onlineUsers) {
+        // 빈 문자열, null, 이메일 형태의 잘못된 데이터 제거
+        if (userId == null
+            || userId.trim().isEmpty()
+            || userId.equals("null")
+            || userId.equals("undefined")
+            || userId.contains("@")) {
+
+          Long removed = redisTemplate.opsForSet().remove(REDIS_ONLINE_USERS_KEY, userId);
+          if (removed != null && removed > 0) {
+            removedCount++;
+            log.info("유효하지 않은 온라인 사용자 제거: {}", userId);
+          }
+        }
+      }
+
+      if (removedCount > 0) {
+        log.info("유효하지 않은 온라인 사용자 {} 명 정리 완료", removedCount);
+      } else {
+        log.debug("정리할 유효하지 않은 온라인 사용자가 없습니다.");
+      }
+    } catch (Exception e) {
+      log.error("온라인 사용자 정리 중 오류 발생: {}", e.getMessage(), e);
+    }
+  }
 }

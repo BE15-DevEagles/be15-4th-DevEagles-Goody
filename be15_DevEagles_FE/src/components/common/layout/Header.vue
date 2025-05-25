@@ -91,6 +91,7 @@
   import { useAuthStore } from '@/store/auth.js';
   import { disconnectWebSocket } from '@/features/chat/api/webSocketService.js';
   import { useUserStatusStore } from '@/store/userStatus.js';
+  import { logoutUserStatus } from '@/features/chat/api/userStatusService.js';
 
   const router = useRouter();
   const authStore = useAuthStore();
@@ -109,24 +110,29 @@
       userStatusStore.reset();
       console.log('[Header] 사용자 상태 스토어 리셋 완료');
 
-      // 2. 웹소켓 연결 해제
+      // 2. 백엔드에 오프라인 상태 알림 (Redis에서 사용자 제거)
+      await logoutUserStatus();
+      console.log('[Header] 사용자 오프라인 상태 변경 완료');
+
+      // 3. 웹소켓 연결 해제
       disconnectWebSocket();
       console.log('[Header] 웹소켓 연결 해제 완료');
 
-      // 3. 서버에 로그아웃 요청
+      // 4. 서버에 로그아웃 요청
       await logout();
       console.log('[Header] 서버 로그아웃 완료');
 
-      // 4. 인증 정보 삭제
+      // 5. 인증 정보 삭제
       authStore.clearAuth();
       console.log('[Header] 인증 정보 삭제 완료');
 
-      // 5. 로그인 페이지로 이동
+      // 6. 로그인 페이지로 이동
       router.push('/login');
     } catch (error) {
       console.error('로그아웃 실패:', error);
       // 에러가 발생해도 클라이언트 정리는 수행
       userStatusStore.reset();
+      await logoutUserStatus();
       disconnectWebSocket();
       authStore.clearAuth();
       router.push('/login');

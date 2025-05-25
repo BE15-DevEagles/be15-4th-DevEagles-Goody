@@ -27,14 +27,25 @@ export const useUserStatusStore = defineStore('userStatus', {
   actions: {
     // 사용자 상태 업데이트
     updateUserStatus(userId, isOnline) {
-      const userIdStr = String(userId);
+      const userIdStr = String(userId).trim();
+
+      // 유효하지 않은 사용자 ID 필터링
+      if (
+        !userIdStr ||
+        userIdStr === 'null' ||
+        userIdStr === 'undefined' ||
+        userIdStr.includes('@')
+      ) {
+        console.warn(`[UserStatusStore] 유효하지 않은 사용자 ID 무시: "${userIdStr}"`);
+        return;
+      }
 
       if (isOnline) {
         this.onlineUsers.add(userIdStr);
-        console.log(`[UserStatusStore] 사용자 ${userId} 온라인됨`);
+        console.log(`[UserStatusStore] 사용자 ${userIdStr} 온라인됨`);
       } else {
         this.onlineUsers.delete(userIdStr);
-        console.log(`[UserStatusStore] 사용자 ${userId} 오프라인됨`);
+        console.log(`[UserStatusStore] 사용자 ${userIdStr} 오프라인됨`);
       }
 
       console.log(
@@ -43,21 +54,26 @@ export const useUserStatusStore = defineStore('userStatus', {
       );
     },
 
-    // 초기 온라인 사용자 목록 로드
     async loadInitialOnlineUsers() {
       try {
         console.log('[UserStatusStore] 초기 온라인 사용자 목록 로드 시작');
         const onlineUserIds = await getOnlineUsers();
 
-        // 기존 온라인 사용자 목록 초기화
         this.onlineUsers.clear();
 
-        // 새로운 온라인 사용자 목록 설정
         onlineUserIds.forEach(userId => {
-          this.onlineUsers.add(String(userId));
+          const userIdStr = String(userId).trim();
+          if (userIdStr && userIdStr !== 'null' && userIdStr !== 'undefined') {
+            if (!userIdStr.includes('@')) {
+              this.onlineUsers.add(userIdStr);
+            }
+          }
         });
 
-        console.log(`[UserStatusStore] 초기 온라인 사용자 ${this.onlineUsers.size}명 로드 완료`);
+        console.log(
+          `[UserStatusStore] 초기 온라인 사용자 ${this.onlineUsers.size}명 로드 완료:`,
+          Array.from(this.onlineUsers)
+        );
       } catch (error) {
         console.error('[UserStatusStore] 초기 온라인 사용자 목록 로드 실패:', error);
       }
@@ -84,7 +100,13 @@ export const useUserStatusStore = defineStore('userStatus', {
           statusMessage.userId !== undefined &&
           statusMessage.online !== undefined
         ) {
-          this.updateUserStatus(statusMessage.userId, statusMessage.online);
+          const userIdStr = String(statusMessage.userId).trim();
+          // 이메일 형태가 아닌 숫자 ID만 처리
+          if (userIdStr && !userIdStr.includes('@')) {
+            this.updateUserStatus(userIdStr, statusMessage.online);
+          } else {
+            console.log('[UserStatusStore] 이메일 형태 사용자 ID 무시:', userIdStr);
+          }
         } else {
           console.warn('[UserStatusStore] 잘못된 상태 메시지 형식:', statusMessage);
         }

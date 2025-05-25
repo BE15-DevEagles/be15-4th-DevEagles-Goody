@@ -392,7 +392,11 @@ export function disconnectWebSocket() {
   // 수동 연결 해제 플래그 설정
   isManualDisconnect = true;
 
+  // 하트비트 중지
+  stopHeartbeat();
+
   if (stompClient && stompClient.connected) {
+    // 모든 구독 해제
     Object.keys(subscriptions).forEach(destination => {
       if (subscriptions[destination].subscription) {
         subscriptions[destination].subscription.unsubscribe();
@@ -400,14 +404,21 @@ export function disconnectWebSocket() {
     });
     subscriptions = {};
 
-    stompClient.disconnect();
+    // STOMP 연결 해제
+    stompClient.disconnect(() => {
+      console.log('[webSocketService] STOMP 연결 해제 콜백 실행됨');
+    });
     stompClient = null;
     console.log('[webSocketService] 웹소켓 연결 종료 완료');
   }
 
   // 상태 초기화
   reconnectAttempts = 0;
+  connectionState = 'disconnected';
   notifyConnectionStateChange('disconnected');
+
+  // 연결 상태 콜백 배열 초기화
+  connectionStateCallbacks = [];
 }
 
 export function getWebSocketStatus() {

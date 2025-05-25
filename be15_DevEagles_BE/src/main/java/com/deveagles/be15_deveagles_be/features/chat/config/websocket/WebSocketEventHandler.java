@@ -49,15 +49,27 @@ public class WebSocketEventHandler {
       logger.info("사용자 연결 완료: 사용자ID={}, 세션ID={}", userId, sessionId);
 
       try {
-        redisTemplate.opsForSet().add(REDIS_KEY_ONLINE_USERS, userId);
-        logger.info("User {} added to online users in Redis.", userId);
+        // Redis에 사용자 추가 (Set이므로 중복 자동 제거)
+        Long addedCount = redisTemplate.opsForSet().add(REDIS_KEY_ONLINE_USERS, userId);
+        boolean wasAdded = addedCount != null && addedCount > 0;
+        logger.info("User {} added to online users in Redis. Was new: {}", userId, wasAdded);
+
+        // 세션 매핑 저장
+        connectedUsers.put(sessionId, userId);
+
+        // 새로 추가된 사용자만 온라인 상태 브로드캐스트
+        if (wasAdded) {
+          notifyUserStatusChange(userId, true);
+          logger.info("User {} online status broadcasted (new user).", userId);
+        } else {
+          logger.info("User {} was already online, skipping broadcast.", userId);
+        }
       } catch (Exception e) {
         logger.error(
             "Failed to add user {} to online_users in Redis: {}", userId, e.getMessage(), e);
+        // Redis 실패 시에도 세션 매핑은 저장
+        connectedUsers.put(sessionId, userId);
       }
-
-      connectedUsers.put(sessionId, userId);
-      notifyUserStatusChange(userId, true);
     }
   }
 
@@ -71,19 +83,37 @@ public class WebSocketEventHandler {
     if (userId != null) {
       logger.info("사용자 연결 종료: 사용자ID={}, 세션ID={}", userId, sessionId);
 
+      // 해당 사용자의 다른 활성 세션이 있는지 확인
       boolean userStillConnected = connectedUsers.values().contains(userId);
 
       if (!userStillConnected) {
         try {
-          redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
-          logger.info("User {} removed from online users in Redis.", userId);
+          // Redis에서 사용자 제거
+          Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
+          logger.info(
+              "User {} removed from online users in Redis. Removed count: {}", userId, removed);
 
-          // 오프라인 상태 브로드캐스트
-          notifyUserStatusChange(userId, false);
-          logger.info("User {} offline status broadcasted to all users.", userId);
+          // 실제로 제거된 경우에만 오프라인 상태 브로드캐스트
+          if (removed != null && removed > 0) {
+            notifyUserStatusChange(userId, false);
+            logger.info("User {} offline status broadcasted to all users.", userId);
+          } else {
+            logger.warn("User {} was not found in Redis online users set.", userId);
+          }
         } catch (Exception e) {
           logger.error(
               "Failed to remove user {} from online_users in Redis: {}", userId, e.getMessage(), e);
+
+          // Redis 실패 시에도 오프라인 상태는 브로드캐스트
+          try {
+            notifyUserStatusChange(userId, false);
+            logger.info("User {} offline status broadcasted despite Redis error.", userId);
+          } catch (Exception broadcastError) {
+            logger.error(
+                "Failed to broadcast offline status for user {}: {}",
+                userId,
+                broadcastError.getMessage());
+          }
         }
       } else {
         logger.info(
