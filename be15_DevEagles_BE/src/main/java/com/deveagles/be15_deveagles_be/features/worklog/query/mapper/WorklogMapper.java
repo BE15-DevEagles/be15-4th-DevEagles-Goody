@@ -15,7 +15,8 @@ public interface WorklogMapper {
       @Param("startDate") LocalDateTime startDate,
       @Param("endDate") LocalDateTime endDate,
       @Param("offset") int offset,
-      @Param("size") int size);
+      @Param("size") int size,
+      @Param("sort") String sort);
 
   // 전체 개수 조회 (페이징용)
   int countWorklogs(

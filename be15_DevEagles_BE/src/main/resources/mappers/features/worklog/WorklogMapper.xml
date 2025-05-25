@@ -15,6 +15,7 @@
         JOIN user u ON w.user_id = u.user_id
         JOIN team t ON w.team_id = t.team_id
         WHERE w.team_id = #{teamId}
+
         <if test="startDate != null and endDate != null">
             AND w.written_at BETWEEN #{startDate} AND #{endDate}
         </if>
@@ -42,11 +43,16 @@
             )
         </if>
 
-        ORDER BY w.written_at DESC
+        <choose>
+            <when test="sort == 'created'">
+                ORDER BY w.written_at ASC
+            </when>
+            <otherwise>
+                ORDER BY w.written_at DESC
+            </otherwise>
+        </choose>
+
         LIMIT #{size} OFFSET #{offset}
-
-
-
     </select>
 
     <select id="countWorklogs" resultType="int">
