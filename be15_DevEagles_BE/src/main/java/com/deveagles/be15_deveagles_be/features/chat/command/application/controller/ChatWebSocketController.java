@@ -6,18 +6,14 @@ import com.deveagles.be15_deveagles_be.features.chat.command.application.service
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.AutoEmotionAnalysisService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatMessageService;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ReadReceiptService;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom.ChatRoomType;
-import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ReadReceipt;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatRoomRepository;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ReadReceiptRepository;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
 import com.deveagles.be15_deveagles_be.features.user.command.application.service.UserCommandService;
 import java.security.Principal;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +40,7 @@ public class ChatWebSocketController {
   private final SimpMessagingTemplate messagingTemplate;
   private final RedisTemplate<String, String> redisTemplate;
   private final UserCommandService userCommandService;
+  private final ReadReceiptService readReceiptService;
 
   public ChatWebSocketController(
       ChatMessageService chatMessageService,
@@ -54,7 +51,8 @@ public class ChatWebSocketController {
       ReadReceiptRepository readReceiptRepository,
       SimpMessagingTemplate messagingTemplate,
       RedisTemplate<String, String> redisTemplate,
-      UserCommandService userCommandService) {
+      UserCommandService userCommandService,
+      ReadReceiptService readReceiptService) {
     this.chatMessageService = chatMessageService;
     this.chatRoomService = chatRoomService;
     this.aiChatService = aiChatService;
@@ -64,6 +62,7 @@ public class ChatWebSocketController {
     this.messagingTemplate = messagingTemplate;
     this.redisTemplate = redisTemplate;
     this.userCommandService = userCommandService;
+    this.readReceiptService = readReceiptService;
   }
 
   @MessageMapping("/chat.send")
@@ -166,86 +165,78 @@ public class ChatWebSocketController {
     String chatroomId = request.getChatroomId();
     String messageId = request.getMessageId();
 
-    boolean redisSuccess = false;
-    boolean mongoSuccess = false;
+    boolean success = false;
 
-    // 1. Redis에 읽음 상태 저장 (빠른 응답용)
+    // 1. ReadReceiptService를 사용하여 DB에 읽음 상태 저장
     try {
-      String redisKey = "chat:last_read_message:" + chatroomId;
-      redisTemplate.opsForHash().put(redisKey, userId, messageId);
+      readReceiptService.markMessageAsRead(chatroomId, messageId, userId);
       log.info(
-          "User {} marked message {} as read in chatroom {} (Redis)",
+          "ReadReceipt 저장 성공: userId={}, messageId={}, chatroomId={}",
           userId,
           messageId,
           chatroomId);
-      redisSuccess = true;
+      success = true;
     } catch (Exception e) {
       log.error(
-          "Failed to update read status in Redis for user {} in chatroom {}: {}",
+          "ReadReceipt 저장 실패: userId={}, messageId={}, chatroomId={}, error={}",
           userId,
+          messageId,
           chatroomId,
           e.getMessage(),
           e);
     }
 
-    // 2. ReadReceipt MongoDB에 저장 (상세 이력용)
-    try {
-      // UTC로 현재 시간 생성 (시간대 문제 해결)
-      LocalDateTime utcTime = ZonedDateTime.now(ZoneOffset.UTC).toLocalDateTime();
-
-      ReadReceipt readReceipt =
-          ReadReceipt.builder()
-              .messageId(messageId)
-              .userId(userId)
-              .chatroomId(chatroomId)
-              .readAt(utcTime)
-              .build();
-
-      // 중복 체크 후 저장
-      Optional<ReadReceipt> existing =
-          readReceiptRepository.findByMessageIdAndUserId(messageId, userId);
-      if (existing.isEmpty()) {
-        readReceiptRepository.save(readReceipt);
-        log.info(
-            "ReadReceipt saved: userId={}, messageId={}, chatroomId={}",
+    // 2. Redis에 읽음 상태 저장 (빠른 응답용, 폴백)
+    if (success) {
+      try {
+        String redisKey = "chat:last_read_message:" + chatroomId;
+        redisTemplate.opsForHash().put(redisKey, userId, messageId);
+        log.debug(
+            "Redis 읽음 상태 업데이트 성공: userId={}, messageId={}, chatroomId={}",
             userId,
             messageId,
             chatroomId);
-      } else {
-        log.debug("ReadReceipt already exists: userId={}, messageId={}", userId, messageId);
+      } catch (Exception e) {
+        log.error(
+            "Redis 읽음 상태 업데이트 실패: userId={}, messageId={}, chatroomId={}, error={}",
+            userId,
+            messageId,
+            chatroomId,
+            e.getMessage(),
+            e);
       }
-      mongoSuccess = true;
-    } catch (Exception e) {
-      log.error(
-          "Failed to save ReadReceipt: userId={}, messageId={}, error={}",
-          userId,
-          messageId,
-          e.getMessage(),
-          e);
     }
 
-    // 3. ChatRoom의 participant lastReadMessage 즉시 업데이트
-    try {
-      chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
-      log.debug(
-          "ChatRoom participant lastReadMessage updated: userId={}, messageId={}, chatroomId={}",
-          userId,
-          messageId,
-          chatroomId);
-    } catch (Exception e) {
-      log.error(
-          "Failed to update ChatRoom participant lastReadMessage: userId={}, messageId={}, chatroomId={}, error={}",
-          userId,
-          messageId,
-          chatroomId,
-          e.getMessage());
+    // 3. ChatRoom의 participant lastReadMessage 업데이트 (폴백)
+    if (!success) {
+      try {
+        chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
+        log.info(
+            "ChatRoom 폴백 읽음 처리 성공: userId={}, messageId={}, chatroomId={}",
+            userId,
+            messageId,
+            chatroomId);
+        success = true;
+      } catch (Exception e) {
+        log.error(
+            "ChatRoom 폴백 읽음 처리 실패: userId={}, messageId={}, chatroomId={}, error={}",
+            userId,
+            messageId,
+            chatroomId,
+            e.getMessage(),
+            e);
+        return;
+      }
     }
 
     // 4. 읽음 상태 이벤트 전송
-    ReadStatusResponse readStatusResponse = new ReadStatusResponse(chatroomId, userId, messageId);
-    String destination = String.format(CHATROOM_READ_TOPIC_FORMAT, chatroomId);
-    messagingTemplate.convertAndSend(destination, readStatusResponse);
-    log.debug("읽음 상태 이벤트 전송 완료 -> 채팅방ID: {}", chatroomId);
+    if (success) {
+      ReadStatusResponse readStatusResponse = new ReadStatusResponse(chatroomId, userId, messageId);
+      String destination = String.format(CHATROOM_READ_TOPIC_FORMAT, chatroomId);
+      messagingTemplate.convertAndSend(destination, readStatusResponse);
+      log.debug(
+          "읽음 상태 이벤트 전송: destination={}, userId={}, messageId={}", destination, userId, messageId);
+    }
   }
 
   @MessageMapping("/chat.ai.init")

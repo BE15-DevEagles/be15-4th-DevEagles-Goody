@@ -8,9 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,28 +37,29 @@ public class UserStatusController {
     }
   }
 
-  @DeleteMapping("/online-users/{userId}")
-  public ResponseEntity<ApiResponse<String>> forceUserOffline(@PathVariable String userId) {
+  @DeleteMapping("/logout")
+  public ResponseEntity<ApiResponse<Void>> logout(Authentication authentication) {
     try {
-      log.info("사용자 {} 강제 오프라인 처리 시작", userId);
+      if (authentication != null && authentication.getName() != null) {
+        String userId = authentication.getName();
 
-      // Redis에서 사용자 제거
-      Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
+        // Redis에서 사용자 제거
+        Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
+        log.info("사용자 {} 로그아웃 처리: Redis에서 {}개 제거됨", userId, removed);
 
-      if (removed != null && removed > 0) {
         // 오프라인 상태 브로드캐스트
         UserStatusMessage statusMessage = new UserStatusMessage(userId, false);
         messagingTemplate.convertAndSend(USER_STATUS_TOPIC, statusMessage);
+        log.info("사용자 {} 오프라인 상태 브로드캐스트 완료", userId);
 
-        log.info("사용자 {} 강제 오프라인 처리 완료", userId);
-        return ResponseEntity.ok(ApiResponse.success("사용자가 오프라인으로 처리되었습니다."));
+        return ResponseEntity.ok(ApiResponse.success(null));
       } else {
-        log.info("사용자 {}는 이미 오프라인 상태입니다.", userId);
-        return ResponseEntity.ok(ApiResponse.success("사용자가 이미 오프라인 상태입니다."));
+        log.warn("인증 정보가 없어 로그아웃 처리를 건너뜁니다");
+        return ResponseEntity.ok(ApiResponse.success(null));
       }
     } catch (Exception e) {
-      log.error("사용자 {} 강제 오프라인 처리 실패", userId, e);
-      return ResponseEntity.ok(ApiResponse.failure("FORCE_OFFLINE_ERROR", "오프라인 처리 중 오류가 발생했습니다."));
+      log.error("로그아웃 처리 실패", e);
+      return ResponseEntity.ok(ApiResponse.success(null));
     }
   }
 }

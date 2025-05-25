@@ -18,20 +18,19 @@ export async function getOnlineUsers() {
   }
 }
 
-export async function forceUserOffline(userId) {
+export async function logoutUserStatus() {
   try {
-    console.log('[userStatusService] 사용자 강제 오프라인 처리:', userId);
-    const response = await api.delete(`/user-status/online-users/${userId}`);
+    const response = await api.delete('/user-status/logout');
 
     if (response.data?.success) {
-      console.log('[userStatusService] 사용자 강제 오프라인 처리 성공:', userId);
+      console.log('[userStatusService] 사용자 오프라인 상태 변경 성공');
       return true;
     }
 
-    console.warn('[userStatusService] 사용자 강제 오프라인 처리 실패:', response.data?.message);
+    console.warn('[userStatusService] 사용자 오프라인 상태 변경 실패:', response.data);
     return false;
   } catch (error) {
-    console.error('[userStatusService] 사용자 강제 오프라인 처리 실패:', error);
+    console.error('[userStatusService] 사용자 오프라인 상태 변경 실패:', error);
     return false;
   }
 }

@@ -160,22 +160,12 @@
     },
   });
 
-  // 실제 온라인 상태를 반영한 팀원 목록 (최적화)
+  // 실제 온라인 상태를 반영한 팀원 목록
   const teamMembersWithStatus = computed(() => {
-    return props.teamMembers.map(member => {
-      const isOnline = userStatusStore.isUserOnline(member.userId);
-
-      // 온라인 상태가 변경되지 않았으면 원본 객체 반환 (참조 유지)
-      if (member.isOnline === isOnline) {
-        return member;
-      }
-
-      // 온라인 상태가 변경된 경우에만 새 객체 생성
-      return {
-        ...member,
-        isOnline,
-      };
-    });
+    return props.teamMembers.map(member => ({
+      ...member,
+      isOnline: isCurrentUser(member.userId) ? true : userStatusStore.isUserOnline(member.userId),
+    }));
   });
 
   // 감정 타입별 아이콘 매핑
@@ -197,7 +187,7 @@
     FEAR: '두려움',
     SURPRISE: '놀람',
     DISGUST: '혐오',
-    NEUTRAL: '중성',
+    NEUTRAL: '보통',
   };
 
   // 감정 아이콘 가져오기

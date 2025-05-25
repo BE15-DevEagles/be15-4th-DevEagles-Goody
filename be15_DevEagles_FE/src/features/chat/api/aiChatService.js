@@ -26,7 +26,21 @@ export async function getUserAiChatRooms(userId) {
     return response.data.data;
   } catch (error) {
     console.error('AI 채팅방 목록 조회 실패:', error);
-    throw error;
+    // AI 채팅방이 없는 경우 빈 배열 반환
+    return [];
+  }
+}
+
+/**
+ * 사용자의 AI 채팅방 조회 (단일)
+ */
+export async function getUserAiChatRoom(userId) {
+  try {
+    const aiChatRooms = await getUserAiChatRooms(userId);
+    return aiChatRooms.length > 0 ? aiChatRooms[0] : null;
+  } catch (error) {
+    console.error('AI 채팅방 조회 실패:', error);
+    return null;
   }
 }
 

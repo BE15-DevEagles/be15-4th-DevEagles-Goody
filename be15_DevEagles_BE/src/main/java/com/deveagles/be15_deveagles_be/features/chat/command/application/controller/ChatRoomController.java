@@ -7,6 +7,7 @@ import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.res
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.response.NotificationSettingResponse;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.dto.response.NotificationToggleResponse;
 import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ReadReceiptService;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.exception.ChatBusinessException;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.exception.ChatErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +16,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,15 +30,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/chatrooms")
 @Tag(name = "채팅방", description = "채팅방 관리 API")
 public class ChatRoomController {
 
   private final ChatRoomService chatRoomService;
+  private final ReadReceiptService readReceiptService;
 
-  public ChatRoomController(ChatRoomService chatRoomService) {
+  public ChatRoomController(
+      ChatRoomService chatRoomService, ReadReceiptService readReceiptService) {
     this.chatRoomService = chatRoomService;
+    this.readReceiptService = readReceiptService;
   }
 
   @PostMapping
@@ -255,15 +261,31 @@ public class ChatRoomController {
       @AuthenticationPrincipal CustomUser customUser) {
     String userId = String.valueOf(customUser.getUserId());
 
-    if (messageId != null) {
-      // 특정 메시지를 읽음 처리
-      chatRoomService.updateLastReadMessage(chatroomId, userId, messageId);
-    } else {
-      // 채팅방의 최신 메시지를 읽음 처리 (간단한 읽음 처리)
-      // 이는 주로 채팅방 목록에서 읽음 처리할 때 사용
-      chatRoomService.markChatRoomAsRead(chatroomId, userId);
-    }
+    try {
+      if (messageId != null) {
+        // 특정 메시지를 읽음 처리
+        readReceiptService.markMessageAsRead(chatroomId, messageId, userId);
+        log.info(
+            "특정 메시지 읽음 처리 완료: chatroomId={}, messageId={}, userId={}",
+            chatroomId,
+            messageId,
+            userId);
+      } else {
+        // 채팅방의 모든 메시지를 읽음 처리
+        readReceiptService.markAllMessagesAsRead(chatroomId, userId);
+        log.info("채팅방 모든 메시지 읽음 처리 완료: chatroomId={}, userId={}", chatroomId, userId);
+      }
 
-    return ResponseEntity.ok(ApiResponse.success(null));
+      return ResponseEntity.ok(ApiResponse.success(null));
+    } catch (Exception e) {
+      log.error(
+          "읽음 처리 실패: chatroomId={}, messageId={}, userId={}, error={}",
+          chatroomId,
+          messageId,
+          userId,
+          e.getMessage(),
+          e);
+      return ResponseEntity.status(500).body(ApiResponse.failure("READ_FAILED", "읽음 처리에 실패했습니다."));
+    }
   }
 }

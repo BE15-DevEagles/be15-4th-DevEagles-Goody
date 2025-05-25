@@ -49,18 +49,27 @@ public class WebSocketEventHandler {
       logger.info("사용자 연결 완료: 사용자ID={}, 세션ID={}", userId, sessionId);
 
       try {
-        redisTemplate.opsForSet().add(REDIS_KEY_ONLINE_USERS, userId);
-        logger.info("User {} added to online users in Redis.", userId);
+        // Redis에 사용자 추가 (Set이므로 중복 자동 제거)
+        Long addedCount = redisTemplate.opsForSet().add(REDIS_KEY_ONLINE_USERS, userId);
+        boolean wasAdded = addedCount != null && addedCount > 0;
+        logger.info("User {} added to online users in Redis. Was new: {}", userId, wasAdded);
 
+        // 세션 매핑 저장
         connectedUsers.put(sessionId, userId);
-        notifyUserStatusChange(userId, true);
-        logger.info("User {} online status broadcasted to all users.", userId);
+
+        // 새로 추가된 사용자만 온라인 상태 브로드캐스트
+        if (wasAdded) {
+          notifyUserStatusChange(userId, true);
+          logger.info("User {} online status broadcasted (new user).", userId);
+        } else {
+          logger.info("User {} was already online, skipping broadcast.", userId);
+        }
       } catch (Exception e) {
         logger.error(
             "Failed to add user {} to online_users in Redis: {}", userId, e.getMessage(), e);
+        // Redis 실패 시에도 세션 매핑은 저장
+        connectedUsers.put(sessionId, userId);
       }
-    } else {
-      logger.warn("세션 ID {}에 대한 사용자 정보를 추출할 수 없음", sessionId);
     }
   }
 
@@ -74,57 +83,53 @@ public class WebSocketEventHandler {
     if (userId != null) {
       logger.info("사용자 연결 종료: 사용자ID={}, 세션ID={}", userId, sessionId);
 
-      // 현재 연결된 모든 세션 로그
-      long userSessionCount =
-          connectedUsers.values().stream().filter(id -> id.equals(userId)).count();
-
-      logger.info("사용자 {} 남은 세션 수: {}", userId, userSessionCount);
-
+      // 해당 사용자의 다른 활성 세션이 있는지 확인
       boolean userStillConnected = connectedUsers.values().contains(userId);
 
       if (!userStillConnected) {
         try {
-          redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
-          logger.info("User {} removed from online users in Redis.", userId);
+          // Redis에서 사용자 제거
+          Long removed = redisTemplate.opsForSet().remove(REDIS_KEY_ONLINE_USERS, userId);
+          logger.info(
+              "User {} removed from online users in Redis. Removed count: {}", userId, removed);
 
-          // 오프라인 상태 브로드캐스트
-          notifyUserStatusChange(userId, false);
-          logger.info("User {} offline status broadcasted to all users.", userId);
+          // 실제로 제거된 경우에만 오프라인 상태 브로드캐스트
+          if (removed != null && removed > 0) {
+            notifyUserStatusChange(userId, false);
+            logger.info("User {} offline status broadcasted to all users.", userId);
+          } else {
+            logger.warn("User {} was not found in Redis online users set.", userId);
+          }
         } catch (Exception e) {
           logger.error(
               "Failed to remove user {} from online_users in Redis: {}", userId, e.getMessage(), e);
+
+          // Redis 실패 시에도 오프라인 상태는 브로드캐스트
+          try {
+            notifyUserStatusChange(userId, false);
+            logger.info("User {} offline status broadcasted despite Redis error.", userId);
+          } catch (Exception broadcastError) {
+            logger.error(
+                "Failed to broadcast offline status for user {}: {}",
+                userId,
+                broadcastError.getMessage());
+          }
         }
       } else {
         logger.info(
-            "User {} still has {} active sessions. Not removing from Redis online list.",
-            userId,
-            userSessionCount);
+            "User {} still has other active sessions. Not removing from Redis online list.",
+            userId);
       }
     } else {
       logger.warn("세션 ID {}에 대한 사용자 정보를 찾을 수 없음", sessionId);
     }
-
-    // 현재 전체 연결 상태 로그
-    logger.info(
-        "현재 총 연결된 세션 수: {}, 고유 사용자 수: {}",
-        connectedUsers.size(),
-        connectedUsers.values().stream().distinct().count());
   }
 
   private String extractUserId(StompHeaderAccessor headerAccessor) {
-    try {
-      if (headerAccessor.getUser() != null) {
-        String userId = headerAccessor.getUser().getName();
-        logger.debug("사용자 ID 추출 성공: {}", userId);
-        return userId;
-      } else {
-        logger.warn("Principal이 null입니다. 인증되지 않은 연결일 수 있습니다.");
-        return null;
-      }
-    } catch (Exception e) {
-      logger.error("사용자 ID 추출 중 오류 발생: {}", e.getMessage(), e);
-      return null;
+    if (headerAccessor.getUser() != null) {
+      return headerAccessor.getUser().getName();
     }
+    return null;
   }
 
   private void notifyUserStatusChange(String userId, boolean isOnline) {

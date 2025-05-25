@@ -138,7 +138,7 @@ export function transformChatRoom(room, currentUserId, teamMembers = []) {
 
   if (room.type === 'AI') {
     thumbnail = '/assets/image/suri.jpg';
-    displayName = '🤖 AI 어시스턴트';
+    displayName = '수리AI';
   } else if (room.type === 'TEAM') {
     // 팀 전체 채팅방인 경우
     displayName = room.name || '팀 전체 채팅방';

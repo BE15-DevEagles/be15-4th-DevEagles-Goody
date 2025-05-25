@@ -6,10 +6,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ReadReceiptService;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom.ChatRoomType;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom.LastMessageInfo;
 import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom.Participant;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatMessageRepository;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ReadReceiptRepository;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomListResponse;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomReadSummaryResponse;
 import com.deveagles.be15_deveagles_be.features.chat.query.application.dto.response.ChatroomResponse;
@@ -33,6 +36,9 @@ public class ChatroomQueryServiceImplTest {
 
   @Mock private ChatroomQueryRepository chatroomQueryRepository;
   @Mock private ChatroomResponseConverter chatroomResponseConverter;
+  @Mock private ReadReceiptService readReceiptService;
+  @Mock private ChatMessageRepository chatMessageRepository;
+  @Mock private ReadReceiptRepository readReceiptRepository;
 
   @InjectMocks private ChatroomQueryServiceImpl chatroomQueryService;
 
@@ -115,6 +121,7 @@ public class ChatroomQueryServiceImplTest {
         .thenReturn(1);
     when(chatroomResponseConverter.convertToChatroomResponse(mockChatRoom))
         .thenReturn(mockChatroomResponse);
+    when(readReceiptService.getUnreadMessageCount(eq(CHATROOM_ID), eq(USER_ID_STR))).thenReturn(3);
 
     // when
     ChatroomListResponse response = chatroomQueryService.getChatrooms(USER_ID, TEAM_ID, page, size);
@@ -130,6 +137,7 @@ public class ChatroomQueryServiceImplTest {
         .findChatroomsByUserIdAndTeamId(eq(USER_ID), eq(TEAM_ID), eq(page), eq(size));
     verify(chatroomQueryRepository).countChatroomsByUserIdAndTeamId(eq(USER_ID), eq(TEAM_ID));
     verify(chatroomResponseConverter).convertToChatroomResponse(mockChatRoom);
+    verify(readReceiptService).getUnreadMessageCount(eq(CHATROOM_ID), eq(USER_ID_STR));
   }
 
   @Test
@@ -187,6 +195,7 @@ public class ChatroomQueryServiceImplTest {
         .thenReturn(Optional.of(mockChatRoom));
     when(chatroomResponseConverter.convertToChatroomResponse(mockChatRoom))
         .thenReturn(mockChatroomResponse);
+    when(readReceiptService.getUnreadMessageCount(eq(CHATROOM_ID), eq(USER_ID_STR))).thenReturn(5);
 
     // when
     ChatroomResponse response = chatroomQueryService.getChatroom(USER_ID, CHATROOM_ID);
@@ -201,6 +210,7 @@ public class ChatroomQueryServiceImplTest {
 
     verify(chatroomQueryRepository).findChatroomById(eq(CHATROOM_ID));
     verify(chatroomResponseConverter).convertToChatroomResponse(mockChatRoom);
+    verify(readReceiptService).getUnreadMessageCount(eq(CHATROOM_ID), eq(USER_ID_STR));
   }
 
   @Test

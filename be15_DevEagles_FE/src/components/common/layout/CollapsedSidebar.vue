@@ -28,7 +28,7 @@
             ? 'bg-[var(--color-primary-300)] text-white'
             : 'text-[var(--color-gray-500)] hover:text-[var(--color-primary-300)]'
         "
-        @click="$emit('toggle-mode', 'team')"
+        @click="$emit('toggle-collapse')"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -53,7 +53,7 @@
             ? 'bg-[var(--color-primary-300)] text-white'
             : 'text-[var(--color-gray-500)] hover:text-[var(--color-primary-300)]'
         "
-        @click="$emit('toggle-mode', 'chat')"
+        @click="$emit('toggle-collapse')"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -147,5 +147,15 @@
    * this.$emit('toggle-mode', 'team')
    * this.$emit('close-chat')
    */
-  defineEmits(['toggle-collapse', 'toggle-mode', 'close-chat']);
+  const emit = defineEmits(['toggle-collapse', 'toggle-mode', 'close-chat']);
+
+  const handleTeamModeClick = () => {
+    emit('toggle-collapse');
+    emit('toggle-mode', 'team');
+  };
+
+  const handleChatModeClick = () => {
+    emit('toggle-collapse');
+    emit('toggle-mode', 'chat');
+  };
 </script>
