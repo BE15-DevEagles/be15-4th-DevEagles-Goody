@@ -184,11 +184,7 @@
 
       if (authStore.returnUser === 'true') showRecoverModal.value(true);
 
-      // 로그인 성공 후 채팅 초기화
-      setTimeout(() => {
-        setupChat();
-      }, 500);
-
+      // 로그인 성공 후 홈으로 이동 (채팅 초기화는 auth.js에서 처리)
       await router.push('/');
     } catch (error) {
       console.error('로그인 실패 : ', error);

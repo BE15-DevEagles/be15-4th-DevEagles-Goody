@@ -90,12 +90,40 @@ public class MongoMessageQueryRepositoryImpl implements MessageQueryRepository {
 
     List<String> readUserIds = readReceipts.stream().map(ReadReceipt::getUserId).toList();
 
-    long activeParticipantsCount =
-        participants.stream().filter(p -> p.get("deletedAt") == null).count();
+    // 활성 참가자 필터링
+    List<Map<String, Object>> activeParticipants =
+        participants.stream().filter(p -> p.get("deletedAt") == null).toList();
 
-    result.put("totalParticipants", (int) activeParticipantsCount);
-    result.put("readCount", readReceipts.size());
-    result.put("unreadCount", (int) activeParticipantsCount - readReceipts.size());
+    // 읽은 사용자와 읽지 않은 사용자 분리
+    List<Map<String, Object>> readUsers = new ArrayList<>();
+    List<Map<String, Object>> unreadUsers = new ArrayList<>();
+
+    for (Map<String, Object> participant : activeParticipants) {
+      String userId = (String) participant.get("userId");
+      if (readUserIds.contains(userId)) {
+        // 읽은 사용자 - ReadReceipt에서 readAt 정보 추가
+        ReadReceipt receipt =
+            readReceipts.stream()
+                .filter(r -> r.getUserId().equals(userId))
+                .findFirst()
+                .orElse(null);
+
+        Map<String, Object> readUser = new HashMap<>(participant);
+        if (receipt != null) {
+          readUser.put("readAt", receipt.getReadAt());
+        }
+        readUsers.add(readUser);
+      } else {
+        // 읽지 않은 사용자
+        unreadUsers.add(participant);
+      }
+    }
+
+    result.put("totalParticipants", activeParticipants.size());
+    result.put("readCount", readUsers.size());
+    result.put("unreadCount", unreadUsers.size());
+    result.put("readUsers", readUsers);
+    result.put("unreadUsers", unreadUsers);
     result.put("readReceipts", readReceipts);
     result.put("participants", participants);
 

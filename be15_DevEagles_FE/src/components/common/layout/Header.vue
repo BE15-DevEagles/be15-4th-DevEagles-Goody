@@ -1,5 +1,5 @@
 <template>
-  <header class="bg-[var(--color-gray-800)] h-14 w-full flex items-center px-3 shadow-drop z-10">
+  <header class="bg-[var(--color-gray-800)] h-14 w-full flex items-center px-3 shadow-drop z-50">
     <div class="flex items-center justify-between w-full">
       <div class="w-30 h-10">
         <img
@@ -59,7 +59,7 @@
 
           <!-- 드롭다운 메뉴 -->
           <div
-            class="absolute right-0 top-full mt-2 bg-white rounded-md shadow-drop overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 w-48 z-50"
+            class="absolute right-0 top-full mt-2 bg-white rounded-md shadow-drop overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 w-48 z-[9999]"
           >
             <div class="py-2">
               <a
@@ -105,7 +105,7 @@
     try {
       console.log('[Header] 로그아웃 시작');
 
-      // 1. 먼저 웹소켓 연결 해제
+      // 1. 먼저 웹소켓 연결 해제 (여러 번 호출해도 안전)
       disconnectWebSocket();
       console.log('[Header] 웹소켓 연결 해제 완료');
 
@@ -113,18 +113,36 @@
       userStatusStore.reset();
       console.log('[Header] 사용자 상태 스토어 리셋 완료');
 
-      // 3. 서버에 로그아웃 요청
-      await logout();
-      console.log('[Header] 서버 로그아웃 완료');
+      // 3. 강제 오프라인 처리 (현재 사용자)
+      if (authStore.userId) {
+        try {
+          const { forceUserOffline } = await import('@/features/chat/api/userStatusService');
+          await forceUserOffline(authStore.userId);
+          console.log('[Header] 강제 오프라인 처리 완료');
+        } catch (error) {
+          console.warn('[Header] 강제 오프라인 처리 실패:', error);
+        }
+      }
 
-      // 4. 인증 정보 삭제
+      // 4. 약간의 지연을 두고 서버에 로그아웃 요청 (웹소켓 해제 완료 대기)
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // 5. 서버에 로그아웃 요청
+      try {
+        await logout();
+        console.log('[Header] 서버 로그아웃 완료');
+      } catch (logoutError) {
+        console.warn('[Header] 서버 로그아웃 실패 (계속 진행):', logoutError);
+      }
+
+      // 6. 인증 정보 삭제
       authStore.clearAuth();
       console.log('[Header] 인증 정보 삭제 완료');
 
-      // 5. 로그인 페이지로 이동
+      // 7. 로그인 페이지로 이동
       router.push('/login');
     } catch (error) {
-      console.error('로그아웃 실패:', error);
+      console.error('[Header] 로그아웃 실패:', error);
       // 에러가 발생해도 클라이언트 정리는 수행
       disconnectWebSocket();
       userStatusStore.reset();
