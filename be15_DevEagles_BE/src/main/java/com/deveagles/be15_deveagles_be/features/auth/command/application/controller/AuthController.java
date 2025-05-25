@@ -139,6 +139,7 @@ public class AuthController {
     }
   }
 
+  @Operation(summary = "RefreshToken 재발급", description = "accessToken 만료 시 자동으로 Token을 재발급합니다.")
   @PostMapping("/refresh")
   public ResponseEntity<ApiResponse<TokenResponse>> refreshToken(
       @CookieValue(name = "refreshToken", required = false) String refreshToken // HttpOnly 쿠키에서 읽어옴
