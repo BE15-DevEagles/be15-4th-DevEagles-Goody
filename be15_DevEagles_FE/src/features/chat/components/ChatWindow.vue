@@ -50,7 +50,6 @@
               >
                 {{ actualIsOnline ? '온라인' : '오프라인' }}
               </p>
-              <!-- 웹소켓 연결 상태는 별도 영역에서 표시 -->
             </div>
           </div>
         </div>
@@ -236,40 +235,26 @@
                 :class="message.isMe ? 'flex-row-reverse' : 'flex-row'"
               >
                 <!-- 메시지 버블 -->
-                <div class="flex flex-col" :class="message.isMe ? 'items-end' : 'items-start'">
-                  <AiMessageBubble
-                    v-if="isCurrentChatAi && isAiMessage(message)"
-                    :message="message"
-                    :is-thinking="isAiThinking"
-                    :is-processing="isProcessingMood"
-                  />
-                  <div
-                    v-else
-                    class="px-3 py-2 rounded-lg max-w-full break-words"
-                    :class="[
-                      message.isMe
-                        ? 'bg-[var(--color-primary-300)] text-white'
-                        : 'bg-white text-[var(--color-gray-700)] border border-[var(--color-gray-200)]',
-                      msgIndex === 0 && message.isMe ? 'rounded-tr-sm' : '',
-                      msgIndex === 0 && !message.isMe ? 'rounded-tl-sm' : '',
-                      msgIndex === group.messages.length - 1 && message.isMe ? 'rounded-br-sm' : '',
-                      msgIndex === group.messages.length - 1 && !message.isMe
-                        ? 'rounded-bl-sm'
-                        : '',
-                    ]"
-                  >
-                    <p class="font-body text-sm whitespace-pre-wrap">{{ message.content }}</p>
-                  </div>
-
-                  <!-- 읽음 상태 표시 (마지막 메시지에만) -->
-                  <MessageReadStatus
-                    v-if="msgIndex === group.messages.length - 1"
-                    :ref="el => registerReadStatusRef(message.id, el)"
-                    :message="message"
-                    :chatroom-id="chat.id"
-                    :show-for-my-messages="true"
-                    @vue:before-unmount="() => unregisterReadStatusRef(message.id)"
-                  />
+                <AiMessageBubble
+                  v-if="isCurrentChatAi && isAiMessage(message)"
+                  :message="message"
+                  :is-thinking="isAiThinking"
+                  :is-processing="isProcessingMood"
+                />
+                <div
+                  v-else
+                  class="px-3 py-2 rounded-lg max-w-full break-words"
+                  :class="[
+                    message.isMe
+                      ? 'bg-[var(--color-primary-300)] text-white'
+                      : 'bg-white text-[var(--color-gray-700)] border border-[var(--color-gray-200)]',
+                    msgIndex === 0 && message.isMe ? 'rounded-tr-sm' : '',
+                    msgIndex === 0 && !message.isMe ? 'rounded-tl-sm' : '',
+                    msgIndex === group.messages.length - 1 && message.isMe ? 'rounded-br-sm' : '',
+                    msgIndex === group.messages.length - 1 && !message.isMe ? 'rounded-bl-sm' : '',
+                  ]"
+                >
+                  <p class="font-body text-sm whitespace-pre-wrap">{{ message.content }}</p>
                 </div>
 
                 <!-- 시간 표시 (마지막 메시지에만) -->
@@ -349,13 +334,9 @@
         </button>
       </div>
 
-      <!-- 웹소켓 연결 상태 표시 -->
-      <div
-        v-if="!isConnected"
-        class="text-xs text-orange-500 mt-2 text-center flex items-center justify-center gap-2"
-      >
-        <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
-        <span>웹소켓 연결이 끊어졌습니다. 메시지가 즉시 전달되지 않을 수 있습니다.</span>
+      <!-- 연결 상태 표시 -->
+      <div v-if="!isConnected" class="text-xs text-orange-500 mt-2 text-center">
+        실시간 연결이 끊어졌습니다. 메시지가 즉시 전달되지 않을 수 있습니다.
       </div>
 
       <!-- AI 응답 대기 상태 표시 -->
@@ -384,7 +365,6 @@
   import { useDebounce } from '@/features/chat/composables/useDebounce';
   import { useAiChat } from '@/features/chat/composables/useAiChat';
   import AiMessageBubble from './AiMessageBubble.vue';
-  import MessageReadStatus from './MessageReadStatus.vue';
   import api from '@/api/axios';
 
   const props = defineProps({
@@ -401,7 +381,6 @@
   const messagesContainer = ref(null);
   const authStore = useAuthStore();
   const userStatusStore = useUserStatusStore();
-  const messageReadStatusRefs = ref(new Map());
 
   // 컴포저블 사용
   const {
@@ -553,25 +532,9 @@
 
   const handleReadStatusMessage = readStatus => {
     console.log('[ChatWindow] 읽음 상태 수신:', readStatus);
-
-    const messageReadStatusRef = messageReadStatusRefs.value.get(readStatus.lastReadMessageId);
-    if (messageReadStatusRef && messageReadStatusRef.refreshReadStatus) {
-      messageReadStatusRef.refreshReadStatus();
-    }
   };
 
-  const registerReadStatusRef = (messageId, ref) => {
-    if (messageId && ref) {
-      messageReadStatusRefs.value.set(messageId, ref);
-    }
-  };
-
-  const unregisterReadStatusRef = messageId => {
-    if (messageId) {
-      messageReadStatusRefs.value.delete(messageId);
-    }
-  };
-
+  // 액션 함수들
   const initChat = async () => {
     await initializeChat(props.chat?.id, {
       loadChatHistory,
@@ -580,7 +543,7 @@
       clearError,
       onReady: async () => {
         // 메시지 핸들러 등록 (초기화 완료 후)
-        registerMessageHandler(onIncomingMessage);
+        registerMessageHandler(onIncomingMessage, props.chat?.id);
 
         // 스크롤 컨테이너 설정
         if (messagesContainer.value) {
@@ -588,9 +551,6 @@
         }
         // 하단으로 스크롤
         nextTick(() => scrollToBottom(true));
-
-        // WebSocket 구독 (메시지 + 읽음 상태)
-        subscribeToChat(props.chat.id, onIncomingMessage, handleReadStatusMessage);
 
         // AI 채팅방인 경우 초기화
         if (isCurrentChatAi.value && props.chat?.id) {
@@ -699,6 +659,11 @@
 
   // 실제 온라인 상태 계산
   const actualIsOnline = computed(() => {
+    // AI 채팅방인 경우 항상 온라인으로 표시
+    if (isCurrentChatAi.value) {
+      return true;
+    }
+
     if (props.chat?.type === 'DIRECT' && props.chat?.participants) {
       const otherParticipant = props.chat.participants.find(p => p.userId !== authStore.userId);
       if (otherParticipant) {

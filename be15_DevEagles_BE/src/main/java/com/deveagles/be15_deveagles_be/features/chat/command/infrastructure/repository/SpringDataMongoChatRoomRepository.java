@@ -28,6 +28,8 @@ public interface SpringDataMongoChatRoomRepository extends MongoRepository<ChatR
   Optional<ChatRoom> findByTeamIdAndUserIdAndTypeAndDeletedAtIsNull(
       String teamId, String userId, ChatRoomType type);
 
+  List<ChatRoom> findByUserIdAndTypeAndDeletedAtIsNull(String userId, ChatRoomType type);
+
   @Query("{'participants.userId': ?0, 'participants.deletedAt': null, 'deletedAt': null}")
   List<ChatRoom> findByParticipantsUserIdAndDeletedAtIsNull(String userId);
 }

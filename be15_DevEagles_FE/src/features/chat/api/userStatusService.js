@@ -1,5 +1,9 @@
 import api from '@/api/axios';
 
+/**
+ * 현재 온라인 사용자 목록 조회
+ * @returns {Promise<string[]>} 온라인 사용자 ID 배열
+ */
 export async function getOnlineUsers() {
   try {
     const response = await api.get('/user-status/online-users');
@@ -18,20 +22,23 @@ export async function getOnlineUsers() {
   }
 }
 
-export async function forceUserOffline(userId) {
+/**
+ * 사용자 로그아웃 시 오프라인 상태로 변경
+ * @returns {Promise<boolean>} 성공 여부
+ */
+export async function logoutUserStatus() {
   try {
-    console.log('[userStatusService] 사용자 강제 오프라인 처리:', userId);
-    const response = await api.delete(`/user-status/online-users/${userId}`);
+    const response = await api.delete('/user-status/logout');
 
     if (response.data?.success) {
-      console.log('[userStatusService] 사용자 강제 오프라인 처리 성공:', userId);
+      console.log('[userStatusService] 사용자 오프라인 상태 변경 성공');
       return true;
     }
 
-    console.warn('[userStatusService] 사용자 강제 오프라인 처리 실패:', response.data?.message);
+    console.warn('[userStatusService] 사용자 오프라인 상태 변경 실패:', response.data);
     return false;
   } catch (error) {
-    console.error('[userStatusService] 사용자 강제 오프라인 처리 실패:', error);
+    console.error('[userStatusService] 사용자 오프라인 상태 변경 실패:', error);
     return false;
   }
 }

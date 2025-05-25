@@ -79,9 +79,9 @@ public class AiChatController {
         userId = String.valueOf(customUser.getUserId());
       }
 
-      // TODO: 실제 구현에서는 사용자의 AI 채팅방 목록을 조회하는 서비스 메서드 필요
-      log.info("사용자 AI 채팅방 목록 조회 - 사용자: {}", userId);
-      return ResponseEntity.ok(ApiResponse.success(List.of()));
+      List<ChatRoomResponse> aiChatRooms = chatRoomService.getUserAiChatRooms(userId);
+      log.info("사용자 AI 채팅방 목록 조회 성공 - 사용자: {}, 채팅방 수: {}", userId, aiChatRooms.size());
+      return ResponseEntity.ok(ApiResponse.success(aiChatRooms));
     } catch (Exception e) {
       log.error("AI 채팅방 목록 조회 중 오류 발생 - 사용자: {}", userId, e);
       return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

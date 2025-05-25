@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { useAuthStore } from './auth';
 import { getChatRooms, markAsRead, createChatRoom } from '@/features/chat/api/chatService';
+import { getUserAiChatRooms } from '@/features/chat/api/aiChatService';
 import {
   initializeWebSocket,
   subscribeToChatRoom,
-  subscribeToReadStatus,
   sendWebSocketMessage,
   disconnectWebSocket,
   isWebSocketConnected,
@@ -20,6 +20,8 @@ export const useChatStore = defineStore('chat', {
     error: null,
     isWebSocketConnected: false,
     currentChatId: null,
+    chatWindowHandler: null, // ChatWindow 전용 메시지 핸들러
+    currentChatWindowId: null, // ChatWindow가 현재 보고 있는 채팅방 ID
   }),
 
   getters: {
@@ -73,14 +75,6 @@ export const useChatStore = defineStore('chat', {
             });
             this.handleIncomingMessage(message);
           });
-
-          subscribeToReadStatus(chat.id, readStatus => {
-            console.log('[setupGlobalMessageHandling] 전역 읽음 상태 수신:', {
-              chatId: chat.id,
-              readStatus,
-            });
-            this.handleReadStatusUpdate(readStatus);
-          });
         }
       });
     },
@@ -93,29 +87,59 @@ export const useChatStore = defineStore('chat', {
 
         const { useTeamStore } = await import('./team');
         const teamStore = useTeamStore();
+        const authStore = useAuthStore();
 
-        // 현재 팀 ID가 없으면 빈 배열 반환
+        // 현재 팀 ID가 없으면 AI 채팅방만 로드
         if (!teamStore.currentTeamId) {
-          console.warn('[loadChatRooms] 현재 팀이 선택되지 않았습니다.');
-          this.chats = [];
+          console.warn('[loadChatRooms] 현재 팀이 선택되지 않았습니다. AI 채팅방만 로드합니다.');
+
+          // AI 채팅방만 로드
+          try {
+            const aiChatRooms = await getUserAiChatRooms(authStore.userId);
+            const teamMembers = [];
+
+            this.chats = aiChatRooms.map(room =>
+              transformChatRoom(room, authStore.userId, teamMembers)
+            );
+
+            console.log('[loadChatRooms] AI 채팅방만 로드 완료:', {
+              aiChatCount: this.chats.length,
+            });
+          } catch (error) {
+            console.error('[loadChatRooms] AI 채팅방 로드 실패:', error);
+            this.chats = [];
+          }
           return;
         }
 
-        const chatRooms = await getChatRooms(teamStore.currentTeamId);
+        // 팀 채팅방과 AI 채팅방을 병렬로 로드
+        const [teamChatRooms, aiChatRooms] = await Promise.all([
+          getChatRooms(teamStore.currentTeamId),
+          getUserAiChatRooms(authStore.userId),
+        ]);
 
-        if (chatRooms && Array.isArray(chatRooms)) {
-          const authStore = useAuthStore();
-
+        if (teamChatRooms && Array.isArray(teamChatRooms)) {
           // 팀원 정보 가져오기
           const teamMembers = teamStore.teamMembers || [];
 
-          this.chats = chatRooms.map(room =>
+          // 팀 채팅방 변환
+          const transformedTeamChats = teamChatRooms.map(room =>
             transformChatRoom(room, authStore.userId, teamMembers)
           );
 
-          console.log('[loadChatRooms] 현재 팀 채팅방 로드 완료:', {
+          // AI 채팅방 변환
+          const transformedAiChats = (aiChatRooms || []).map(room =>
+            transformChatRoom(room, authStore.userId, teamMembers)
+          );
+
+          // AI 채팅방을 맨 앞에 배치하고 팀 채팅방을 뒤에 배치
+          this.chats = [...transformedAiChats, ...transformedTeamChats];
+
+          console.log('[loadChatRooms] 채팅방 로드 완료:', {
             teamId: teamStore.currentTeamId,
-            chatCount: this.chats.length,
+            teamChatCount: transformedTeamChats.length,
+            aiChatCount: transformedAiChats.length,
+            totalChatCount: this.chats.length,
             teamMemberCount: teamMembers.length,
           });
 
@@ -136,7 +160,17 @@ export const useChatStore = defineStore('chat', {
             this.setupGlobalMessageHandling();
           }
         } else {
-          this.chats = [];
+          // 팀 채팅방이 없는 경우 AI 채팅방만 표시
+          const aiChatRooms = await getUserAiChatRooms(authStore.userId);
+          const teamMembers = teamStore.teamMembers || [];
+
+          this.chats = (aiChatRooms || []).map(room =>
+            transformChatRoom(room, authStore.userId, teamMembers)
+          );
+
+          console.log('[loadChatRooms] AI 채팅방만 로드 완료 (팀 채팅방 없음):', {
+            aiChatCount: this.chats.length,
+          });
         }
       } catch (err) {
         console.error('채팅방 목록 로드 실패:', err);
@@ -152,6 +186,7 @@ export const useChatStore = defineStore('chat', {
       this.currentChatId = chatId;
       await this.markChatAsRead(chatId);
 
+      // 웹소켓 구독 (연결 상태 확인 후 재시도)
       const subscribeWithRetry = (retryCount = 0) => {
         if (isWebSocketConnected()) {
           subscribeToChatRoom(chatId, message => {
@@ -180,24 +215,6 @@ export const useChatStore = defineStore('chat', {
           await markAsRead(chatId);
         } catch (error) {
           console.error('읽음 표시 실패:', error);
-        }
-      }
-    },
-
-    // 읽음 상태 변경 처리 (WebSocket 이벤트용)
-    handleReadStatusUpdate(readStatus) {
-      const { chatroomId, userId } = readStatus;
-      const authStore = useAuthStore();
-
-      // 다른 사용자가 읽음 처리한 경우, 내가 현재 채팅방에 있다면 읽지 않은 메시지 수 감소
-      if (userId !== authStore.userId && this.currentChatId === chatroomId) {
-        const chatIndex = this.chats.findIndex(c => c.id === chatroomId);
-        if (chatIndex > -1 && this.chats[chatIndex].unreadCount > 0) {
-          this.chats[chatIndex].unreadCount = Math.max(0, this.chats[chatIndex].unreadCount - 1);
-          console.log('[handleReadStatusUpdate] 읽지 않은 메시지 수 감소:', {
-            chatroomId,
-            newUnreadCount: this.chats[chatIndex].unreadCount,
-          });
         }
       }
     },
@@ -243,6 +260,21 @@ export const useChatStore = defineStore('chat', {
       const authStore = useAuthStore();
       const { showChatNotification } = useNotifications();
       let chatIndex = this.chats.findIndex(c => c.id === message.chatroomId);
+
+      // ChatWindow 핸들러가 등록되어 있고, 현재 ChatWindow가 보고 있는 채팅방의 메시지인 경우 핸들러 호출
+      if (this.chatWindowHandler && this.currentChatWindowId === message.chatroomId) {
+        console.log('[handleIncomingMessage] ChatWindow 핸들러 호출:', {
+          messageId: message.id,
+          chatroomId: message.chatroomId,
+          hasHandler: !!this.chatWindowHandler,
+        });
+
+        try {
+          this.chatWindowHandler(message);
+        } catch (error) {
+          console.error('[handleIncomingMessage] ChatWindow 핸들러 호출 중 오류:', error);
+        }
+      }
 
       // 채팅방이 목록에 없으면 새로고침하여 추가
       if (chatIndex === -1) {
@@ -461,6 +493,15 @@ export const useChatStore = defineStore('chat', {
     async initialize() {
       await this.initializeWebSocketConnection();
       await this.loadChatRooms();
+
+      // 사용자 상태 구독 초기화
+      try {
+        const { useUserStatusStore } = await import('@/store/userStatus');
+        const userStatusStore = useUserStatusStore();
+        await userStatusStore.initializeUserStatusSubscription();
+      } catch (error) {
+        console.error('사용자 상태 구독 초기화 실패:', error);
+      }
     },
 
     // 정리
@@ -468,6 +509,70 @@ export const useChatStore = defineStore('chat', {
       disconnectWebSocket();
       this.isWebSocketConnected = false;
       this.currentChatId = null;
+      this.chatWindowHandler = null;
+      this.currentChatWindowId = null;
+    },
+
+    // ChatWindow 메시지 핸들러 등록
+    registerChatWindowHandler(chatId, handler) {
+      console.log('[chatStore] ChatWindow 핸들러 등록:', {
+        chatId,
+        hasHandler: !!handler,
+        handlerType: typeof handler,
+      });
+
+      this.currentChatWindowId = chatId;
+      this.chatWindowHandler = handler;
+
+      console.log('[chatStore] ChatWindow 핸들러 등록 완료:', {
+        currentChatWindowId: this.currentChatWindowId,
+        isRegistered: !!this.chatWindowHandler,
+      });
+    },
+
+    // ChatWindow 메시지 핸들러 해제
+    unregisterChatWindowHandler() {
+      console.log('[chatStore] ChatWindow 핸들러 해제 요청');
+
+      this.currentChatWindowId = null;
+      this.chatWindowHandler = null;
+
+      console.log('[chatStore] ChatWindow 핸들러 해제 완료');
+    },
+
+    // 채팅방 목록 조회
+    async loadChats(teamId = null) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const chatRooms = await getChatRooms(teamId);
+        console.log('[chatStore] 채팅방 목록 조회 완료:', chatRooms);
+
+        this.chats = chatRooms.map(room => {
+          const transformedChat = transformChatRoom(room);
+
+          // unreadCount가 있으면 사용, 없으면 0으로 설정
+          transformedChat.unreadCount = room.unreadCount || 0;
+
+          console.log('[chatStore] 채팅방 변환:', {
+            id: transformedChat.id,
+            name: transformedChat.name,
+            unreadCount: transformedChat.unreadCount,
+            lastMessage: transformedChat.lastMessage?.substring(0, 20),
+          });
+
+          return transformedChat;
+        });
+
+        console.log('[chatStore] 전체 읽지 않은 메시지 수:', this.unreadCount);
+      } catch (error) {
+        console.error('채팅방 목록 조회 실패:', error);
+        this.error = '채팅방 목록을 불러오는데 실패했습니다.';
+        this.chats = [];
+      } finally {
+        this.isLoading = false;
+      }
     },
   },
 });

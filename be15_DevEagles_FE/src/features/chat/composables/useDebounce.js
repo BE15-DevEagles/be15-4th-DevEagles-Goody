@@ -12,12 +12,8 @@ export function useDebounce(fn, delay = 300) {
     }
 
     timeoutId = setTimeout(() => {
-      try {
-        fn(...args);
-      } finally {
-        isLoading.value = false;
-        timeoutId = null;
-      }
+      fn(...args);
+      isLoading.value = false;
     }, delay);
   };
 
@@ -31,15 +27,8 @@ export function useDebounce(fn, delay = 300) {
 
   const flush = (...args) => {
     cancel();
-    try {
-      fn(...args);
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  const cleanup = () => {
-    cancel();
+    fn(...args);
+    isLoading.value = false;
   };
 
   return {
@@ -47,7 +36,6 @@ export function useDebounce(fn, delay = 300) {
     isLoading,
     cancel,
     flush,
-    cleanup,
   };
 }
 

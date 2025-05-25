@@ -23,4 +23,6 @@ public interface ReadReceiptRepository {
       String chatroomId, String userId, LocalDateTime after);
 
   void deleteByMessageId(String messageId);
+
+  void deleteByChatroomIdAndUserId(String chatroomId, String userId);
 }

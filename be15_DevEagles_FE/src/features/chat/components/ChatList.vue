@@ -190,30 +190,20 @@
    */
   const emit = defineEmits(['select-chat', 'retry-load']);
 
-  // 실제 온라인 상태를 반영한 채팅 목록 (최적화)
+  // 실제 온라인 상태를 반영한 채팅 목록
   const chatsWithStatus = computed(() => {
     return props.chats.map(chat => {
-      // DIRECT 타입이 아니면 원본 반환 (빠른 경로)
-      if (chat.type !== 'DIRECT') {
-        return chat;
+      if (chat.type === 'DIRECT' && chat.participants && chat.participants.length > 0) {
+        // 1:1 채팅에서 상대방의 온라인 상태 확인
+        const otherParticipant = chat.participants.find(p => p.userId !== chat.currentUserId);
+        if (otherParticipant) {
+          return {
+            ...chat,
+            isOnline: userStatusStore.isUserOnline(otherParticipant.userId),
+          };
+        }
       }
-
-      // participants가 없으면 원본 반환
-      if (!chat.participants || chat.participants.length === 0) {
-        return chat;
-      }
-
-      // 상대방 찾기
-      const otherParticipant = chat.participants.find(p => p.userId !== chat.currentUserId);
-      if (!otherParticipant) {
-        return chat;
-      }
-
-      // 온라인 상태만 업데이트
-      return {
-        ...chat,
-        isOnline: userStatusStore.isUserOnline(otherParticipant.userId),
-      };
+      return chat;
     });
   });
 

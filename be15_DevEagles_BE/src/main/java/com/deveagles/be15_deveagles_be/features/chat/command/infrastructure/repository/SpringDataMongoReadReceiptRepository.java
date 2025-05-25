@@ -27,4 +27,6 @@ public interface SpringDataMongoReadReceiptRepository extends MongoRepository<Re
 
   List<ReadReceipt> findByChatroomIdAndReadAtBetween(
       String chatroomId, LocalDateTime start, LocalDateTime end);
+
+  void deleteByChatroomIdAndUserId(String chatroomId, String userId);
 }
