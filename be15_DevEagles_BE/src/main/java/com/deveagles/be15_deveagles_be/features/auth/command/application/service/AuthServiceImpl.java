@@ -15,6 +15,7 @@ import jakarta.mail.MessagingException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -100,6 +101,47 @@ public class AuthServiceImpl implements AuthService {
     }
 
     return authCode;
+  }
+
+  @Override
+  public TokenResponse refreshToken(String refreshToken) {
+    // 리프레시 토큰 유효성 검사
+    jwtTokenProvider.validateToken(refreshToken);
+    String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
+
+    // Redis에서 저장된 refresh token 가져오기
+    String redisKey = "RT:" + username;
+    String storedToken = redisTemplate.opsForValue().get(redisKey);
+
+    if (storedToken == null) {
+      throw new BadCredentialsException("해당 유저로 저장된 리프레시 토큰 없음");
+    }
+
+    if (!storedToken.equals(refreshToken)) {
+      throw new BadCredentialsException("리프레시 토큰 일치하지 않음");
+    }
+
+    User user =
+        userRepository
+            .findUserByEmail(username)
+            .orElseThrow(() -> new BadCredentialsException("해당 유저 없음"));
+
+    // 새로운 토큰 재발급
+    String newAccessToken = jwtTokenProvider.createToken(user.getEmail());
+    String newRefreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+
+    redisTemplate
+        .opsForValue()
+        .set(
+            redisKey,
+            newRefreshToken,
+            jwtTokenProvider.getRefreshExpiration(),
+            TimeUnit.MILLISECONDS);
+
+    return TokenResponse.builder()
+        .accessToken(newAccessToken)
+        .refreshToken(newRefreshToken)
+        .build();
   }
 
   @Override

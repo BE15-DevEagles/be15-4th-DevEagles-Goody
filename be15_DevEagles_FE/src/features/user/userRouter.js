@@ -16,7 +16,7 @@ export const userRoutes = [
   },
   {
     path: '/email-pwd',
-    name: 'EmailVerify',
+    name: 'EmailVerifyPwd',
     component: () => import('@/features/user/views/EmailVerifyPwdView.vue'),
   },
   {

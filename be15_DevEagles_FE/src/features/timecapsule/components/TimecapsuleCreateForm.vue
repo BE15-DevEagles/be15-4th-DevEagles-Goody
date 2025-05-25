@@ -1,6 +1,11 @@
 <template>
   <div class="timecapsule-form-container">
     <form @submit.prevent="openConfirmModal">
+      <!-- 현재 팀 이름 표시 -->
+      <div class="team-name-row">
+        <span class="team-name-label"></span>
+        <span class="team-name-value">{{ teamName }}</span>
+      </div>
       <div class="form-row">
         <label for="openDate">오픈할 날짜</label>
         <input id="openDate" v-model="form.openDate" type="date" :min="today" required />
@@ -28,19 +33,27 @@
       </div>
     </form>
 
-    <!-- 모달창 -->
+    <!-- 생성 전 확인 모달 -->
     <BaseModal v-model="showConfirm" title="타임캡슐 생성 확인">
       <template #default> 타임캡슐을 저장하시겠습니까? </template>
       <template #footer>
-        <BaseButton @click="showConfirm = false">취소</BaseButton>
+        <BaseButton type="error" @click="showConfirm = false">취소</BaseButton>
         <BaseButton type="primary" @click="onSubmitConfirm">확인</BaseButton>
+      </template>
+    </BaseModal>
+
+    <!-- 생성 완료 안내 모달 -->
+    <BaseModal v-model="showSuccess" title="알림">
+      <template #default> 타임캡슐 생성이 완료되었습니다. </template>
+      <template #footer>
+        <BaseButton type="primary" @click="showSuccess = false">확인</BaseButton>
       </template>
     </BaseModal>
   </div>
 </template>
 
 <script setup>
-  import { ref, computed } from 'vue';
+  import { reactive, computed, ref } from 'vue';
   import { useTimecapsule } from '../composables/useTimecapsule';
   import { useTeamStore } from '@/store/team';
   import BaseModal from '@/components/common/components/BaseModal.vue';
@@ -49,20 +62,27 @@
   const teamStore = useTeamStore();
   const teamId = computed(() => teamStore.currentTeamId);
 
+  // 현재 팀 이름 가져오기
+  const teamName = computed(() => {
+    const t = teamStore.teams.find(team => team.teamId === teamId.value);
+    return t ? t.teamName : '';
+  });
+
   const today = new Date().toISOString().split('T')[0];
 
-  const form = ref({
+  const form = reactive({
     timecapsuleContent: '',
     openDate: '',
   });
 
   const dateError = computed(() => {
-    return form.value.openDate && form.value.openDate <= today;
+    return form.openDate && form.openDate <= today;
   });
 
   const { createTimecapsuleAction } = useTimecapsule();
 
   const showConfirm = ref(false);
+  const showSuccess = ref(false);
 
   function openConfirmModal() {
     if (!teamId.value || dateError.value) {
@@ -71,16 +91,23 @@
     showConfirm.value = true;
   }
 
+  function resetForm() {
+    form.timecapsuleContent = '';
+    form.openDate = '';
+  }
+
   async function onSubmitConfirm() {
     showConfirm.value = false;
     try {
       await createTimecapsuleAction({
-        ...form.value,
+        ...form,
         teamId: teamId.value,
       });
-      window.location.reload();
+      resetForm();
+      showSuccess.value = true;
+      console.log('showSuccess:', showSuccess.value); // true가 찍히는지 확인
     } catch (e) {
-      // 에러 핸들링 필요시 여기에 추가
+      console.error(e);
     }
   }
 </script>
@@ -94,6 +121,23 @@
     margin: 36px auto;
     max-width: 800px;
     min-width: 400px;
+  }
+
+  .team-name-row {
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .team-name-label {
+    font-weight: 700;
+    color: #257180;
+    margin-right: 10px;
+  }
+  .team-name-value {
+    font-weight: 500;
+    color: #333;
   }
 
   .form-row {

@@ -74,8 +74,7 @@ public class WorklogServiceImpl implements WorklogService {
   @Override
   public SummaryResponse summaryGenerate(Long userId, WorkSummaryRequest request) {
     validateUserExists(userId);
-    String prompt =
-        GeneratorBuilder.ContentsPrompt(request.getWorkContent(), request.getWorkContent());
+    String prompt = GeneratorBuilder.ContentsPrompt(request.getWorkContent(), request.getNote());
     Map<String, Object> body =
         Map.of(
             "contents",

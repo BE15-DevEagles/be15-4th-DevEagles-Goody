@@ -40,17 +40,37 @@ export const useAuthStore = defineStore('auth', () => {
 
       localStorage.setItem('accessToken', at);
 
-      // 인증 완료 후 사용자 상태 초기화
+      // 웹소켓 상태 리셋 (새로운 로그인)
+      try {
+        const { resetWebSocketState } = await import('@/features/chat/api/webSocketService');
+        resetWebSocketState();
+        console.log('[Auth] 웹소켓 상태 리셋 완료');
+      } catch (error) {
+        console.warn('[Auth] 웹소켓 상태 리셋 실패:', error);
+      }
+
+      // 인증 완료 후 사용자 상태 초기화 (await로 순서 보장)
       if (userStatus.value === 'ENABLED') {
         try {
+          console.log('[Auth] 사용자 상태 초기화 시작');
           const { useUserStatusStore } = await import('@/store/userStatus');
           const userStatusStore = useUserStatusStore();
-          await userStatusStore.initializeUserStatusSubscription();
+
+          // 이미 초기화되었다면 온라인 사용자 목록만 새로고침
+          if (userStatusStore.isInitialized) {
+            console.log('[Auth] 이미 초기화됨, 온라인 사용자 목록만 새로고침');
+            await userStatusStore.refreshOnlineUsers();
+          } else {
+            await userStatusStore.initializeUserStatusSubscription();
+          }
+
+          console.log('[Auth] 사용자 상태 초기화 완료');
         } catch (error) {
-          console.error('사용자 상태 초기화 실패:', error);
+          console.error('[Auth] 사용자 상태 초기화 실패:', error);
         }
       }
     } catch (e) {
+      console.error('[Auth] setAuth 실패:', e);
       clearAuth();
     }
   }
