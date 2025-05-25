@@ -31,7 +31,7 @@
       <!-- 채팅 목록 -->
       <div v-else>
         <div
-          v-for="chat in chatsWithStatus"
+          v-for="chat in chats"
           :key="chat.id"
           class="p-3 border-b border-[var(--color-gray-200)] hover:bg-[var(--color-gray-100)] cursor-pointer transition-colors"
           @click="handleChatSelect(chat)"
@@ -131,9 +131,8 @@
 </template>
 
 <script setup>
-  import { defineProps, defineEmits, computed } from 'vue';
+  import { defineProps, defineEmits } from 'vue';
   import { useNotifications } from '@/features/chat/composables/useNotifications';
-  import { useUserStatus } from '@/features/user/composables/useUserStatus';
   import {
     getChatTypeClass,
     getChatDisplayChar,
@@ -141,7 +140,6 @@
   } from '@/features/chat/utils/chatUtils';
 
   const { isNotificationEnabled } = useNotifications();
-  const { getUserStatus } = useUserStatus();
 
   /**
    * Props:
@@ -191,23 +189,6 @@
    * this.$emit('select-chat', { id: 1, name: '김경록', ... })
    */
   const emit = defineEmits(['select-chat', 'retry-load']);
-
-  // 실시간 온라인 상태를 반영한 채팅 목록
-  const chatsWithStatus = computed(() => {
-    return props.chats.map(chat => {
-      if (chat.type === 'DIRECT' && chat.participants) {
-        // 1:1 채팅에서 상대방의 온라인 상태 업데이트
-        const otherParticipant = chat.participants.find(p => p.userId !== chat.currentUserId);
-        if (otherParticipant) {
-          return {
-            ...chat,
-            isOnline: getUserStatus(otherParticipant.userId),
-          };
-        }
-      }
-      return chat;
-    });
-  });
 
   // 채팅 선택 처리
   function handleChatSelect(chat) {

@@ -8,7 +8,7 @@
 
     <div class="overflow-y-auto h-full" style="height: calc(100% - 49px)">
       <div
-        v-for="(member, idx) in teamMembersWithStatus"
+        v-for="(member, idx) in teamMembers"
         :key="member.userId || idx"
         class="p-3 border-b border-[var(--color-gray-200)] hover:bg-[var(--color-gray-100)] transition-colors"
       >
@@ -132,12 +132,10 @@
 </template>
 
 <script setup>
-  import { defineProps, defineEmits, watch, computed } from 'vue';
+  import { defineProps, defineEmits, watch } from 'vue';
   import { useAuthStore } from '@/store/auth';
-  import { useUserStatus } from '@/features/user/composables/useUserStatus';
 
   const authStore = useAuthStore();
-  const { getUserStatus } = useUserStatus();
 
   /**
    * Props:
@@ -243,14 +241,6 @@
     },
     { deep: true }
   );
-
-  // 실제 온라인 상태를 반영한 팀원 목록
-  const teamMembersWithStatus = computed(() => {
-    return props.teamMembers.map(member => ({
-      ...member,
-      isOnline: getUserStatus(member.userId),
-    }));
-  });
 
   /**
    * Emits:

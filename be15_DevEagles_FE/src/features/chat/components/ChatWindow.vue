@@ -45,10 +45,10 @@
             </h3>
             <div class="flex items-center gap-2">
               <p
-                v-if="chat.type === 'DIRECT' && chat.participants"
+                v-if="chat.isOnline !== undefined"
                 class="text-[var(--color-gray-500)] font-small leading-tight whitespace-nowrap overflow-hidden text-ellipsis"
               >
-                {{ getOtherParticipantStatus() }}
+                {{ chat.isOnline ? '온라인' : '오프라인' }}
               </p>
               <div
                 v-if="isConnected"
@@ -369,7 +369,6 @@
   import { useChatWindow } from '@/features/chat/composables/useChatWindow';
   import { useDebounce } from '@/features/chat/composables/useDebounce';
   import { useAiChat } from '@/features/chat/composables/useAiChat';
-  import { useUserStatus } from '@/features/user/composables/useUserStatus';
   import AiMessageBubble from './AiMessageBubble.vue';
   import api from '@/api/axios';
 
@@ -453,8 +452,6 @@
     clearError: clearAiError,
   } = useAiChat();
 
-  const { getUserStatus } = useUserStatus();
-
   // 무한 스크롤 콜백 함수
   const infiniteScrollCallback = () => {
     return loadMoreMessages(props.chat?.id, {
@@ -490,24 +487,6 @@
   const isWaitingForMood = computed(() => {
     return isCurrentChatAi.value && isWaitingForMoodResponse(messages.value);
   });
-
-  // 상대방의 온라인 상태 가져오기
-  const getOtherParticipantStatus = () => {
-    if (props.chat?.type !== 'DIRECT' || !props.chat?.participants) {
-      return '';
-    }
-
-    const otherParticipant = props.chat.participants.find(
-      p => String(p.userId) !== String(authStore.userId)
-    );
-
-    if (!otherParticipant) {
-      return '';
-    }
-
-    const isOnline = getUserStatus(otherParticipant.userId);
-    return isOnline ? '온라인' : '오프라인';
-  };
 
   // 스크롤 핸들러
   const handleInfiniteScroll = event => {
