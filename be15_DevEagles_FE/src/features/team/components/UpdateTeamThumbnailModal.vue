@@ -21,7 +21,7 @@
       </div>
 
       <template #footer>
-        <BaseButton type="secondary" @click="closeModal">취소</BaseButton>
+        <BaseButton type="error" @click="closeModal">취소</BaseButton>
         <BaseButton type="primary" @click="submit">저장</BaseButton>
       </template>
     </BaseModal>
