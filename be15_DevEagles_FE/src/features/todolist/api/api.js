@@ -62,3 +62,8 @@ export function deleteTodo(todoId) {
 export function completeTodo(todoId) {
   return api.put(`/todos/${todoId}/complete`);
 }
+
+/* 12. 할 일 생성 */
+export function createTodos(payload) {
+  return api.post('/todos', payload);
+}

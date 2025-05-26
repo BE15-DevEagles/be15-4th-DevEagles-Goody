@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.request.CreateTeamRequest;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.response.CreateTeamResponse;
 import com.deveagles.be15_deveagles_be.features.team.command.application.service.impl.TeamCommandServiceImpl;
@@ -33,8 +34,10 @@ class CreateTeamTest {
     userRepository = mock(UserRepository.class); // ✅ 추가
     teamMemberRepository = mock(TeamMemberRepository.class);
     AmazonS3 amazonS3 = mock(AmazonS3.class); // ✅ 추가
+    ChatRoomService chatRoomService = mock(ChatRoomService.class);
     teamCommandServiceImpl =
-        new TeamCommandServiceImpl(teamRepository, userRepository, teamMemberRepository, amazonS3);
+        new TeamCommandServiceImpl(
+            teamRepository, userRepository, teamMemberRepository, chatRoomService, amazonS3);
   }
 
   @Test

@@ -14,6 +14,7 @@ public class TimecapsuleQueryService {
 
   private final TimecapsuleQueryRepository repository;
 
+  // INACTIVE(오픈 가능한) 타임캡슐 목록 조회
   public List<TimecapsuleResponse> getOpenedTimecapsulesByUser(Long userId) {
     return repository
         .findByUserIdAndTimecapsuleStatus(userId, Timecapsule.TimecapsuleStatus.INACTIVE)
@@ -31,5 +32,17 @@ public class TimecapsuleQueryService {
                     .openedAt(tc.getOpenedAt())
                     .build())
         .collect(Collectors.toList());
+  }
+
+  // 타임캡슐 삭제
+  public void deleteTimecapsule(Long timecapsuleId, Long userId) {
+    Timecapsule tc =
+        repository
+            .findById(timecapsuleId)
+            .orElseThrow(() -> new IllegalArgumentException("타임캡슐이 존재하지 않습니다."));
+    if (!tc.getUserId().equals(userId)) {
+      throw new IllegalArgumentException("삭제 권한이 없습니다.");
+    }
+    repository.deleteById(timecapsuleId);
   }
 }

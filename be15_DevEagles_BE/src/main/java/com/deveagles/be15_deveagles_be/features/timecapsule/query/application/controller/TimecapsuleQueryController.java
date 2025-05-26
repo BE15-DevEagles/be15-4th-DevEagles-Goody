@@ -17,10 +17,19 @@ public class TimecapsuleQueryController {
 
   private final TimecapsuleQueryService queryService;
 
+  // INACTIVE(오픈 가능한) 타임캡슐 목록 조회
   @GetMapping("/opened")
   public ResponseEntity<ApiResponse<List<TimecapsuleResponse>>> getOpenedTimecapsules(
       @AuthenticationPrincipal CustomUser user) {
     List<TimecapsuleResponse> result = queryService.getOpenedTimecapsulesByUser(user.getUserId());
     return ResponseEntity.ok(ApiResponse.success(result));
+  }
+
+  // 타임캡슐 삭제
+  @DeleteMapping("/{timecapsuleId}")
+  public ResponseEntity<ApiResponse<Void>> deleteTimecapsule(
+      @PathVariable Long timecapsuleId, @AuthenticationPrincipal CustomUser user) {
+    queryService.deleteTimecapsule(timecapsuleId, user.getUserId());
+    return ResponseEntity.ok(ApiResponse.success(null));
   }
 }

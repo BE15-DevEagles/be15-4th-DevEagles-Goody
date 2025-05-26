@@ -4,4 +4,9 @@ export const timecapsuleRoute = [
     name: 'TimecapsuleCreate',
     component: () => import('@/features/timecapsule/views/TimecapsuleCreatePage.vue'),
   },
+  {
+    path: 'timecapsule/list',
+    name: 'TimecapsuleList',
+    component: () => import('@/features/timecapsule/views/TimecapsuleList.vue'),
+  },
 ];
