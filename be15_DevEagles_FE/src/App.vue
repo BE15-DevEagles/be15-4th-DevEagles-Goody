@@ -15,7 +15,7 @@
       <div v-if="currentCapsule">
         <div class="mb-2">
           <strong>생성 일시:</strong>
-          {{ formatDateTime(currentCapsule.createdAt) }}
+          {{ formatDateTimeKST(currentCapsule.createdAt) }}
         </div>
         <div><strong>내용:</strong> {{ currentCapsule.timecapsuleContent }}</div>
         <div class="mt-2 text-right text-xs text-gray-400">
@@ -60,12 +60,11 @@
   // 현재 보여줄 타임캡슐
   const currentCapsule = computed(() => openCapsules.value[currentCapsuleIndex.value] || null);
 
-  // 날짜/시간 포맷 함수
-  function formatDateTime(isoString) {
+  function formatDateTimeKST(isoString) {
     if (!isoString) return '';
-    const dt = new Date(isoString);
+    const date = new Date(isoString);
     const pad = n => n.toString().padStart(2, '0');
-    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
   // 팀 클릭 후(혹은 currentTeamId 변경 시) 오픈 타임캡슐 조회
@@ -107,7 +106,6 @@
     { immediate: true }
   );
 
-  // --- 기존 App.vue 코드 (건드리지 않음) ---
   // 페이지 종료 시 웹소켓 연결 해제
   const handleBeforeUnload = event => {
     if (authStore.isAuthenticated) {
