@@ -7,6 +7,7 @@ import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.query.service.WorklogSearchQueryService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Worklog Search", description = "업무일지 통합 검색 API")
 @RequestMapping("/api/v1/search")
 public class SearchInfoController {
 

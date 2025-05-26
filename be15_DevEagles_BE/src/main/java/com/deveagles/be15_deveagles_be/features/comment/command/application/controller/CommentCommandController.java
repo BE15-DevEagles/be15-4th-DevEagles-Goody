@@ -7,6 +7,7 @@ import com.deveagles.be15_deveagles_be.features.comment.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.comment.command.application.dto.response.CommentResponse;
 import com.deveagles.be15_deveagles_be.features.comment.command.application.service.CommentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/comments")
+@Tag(name = "Comment", description = "업무일지 댓글 관련 API")
 public class CommentCommandController {
 
   private final CommentService commentService;

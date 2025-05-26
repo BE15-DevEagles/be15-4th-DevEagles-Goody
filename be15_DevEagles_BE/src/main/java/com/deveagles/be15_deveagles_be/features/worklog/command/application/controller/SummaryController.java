@@ -6,6 +6,7 @@ import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.SummaryResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.WorklogService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/summary")
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Summary", description = "AI 요약 관련 API")
 public class SummaryController {
   private final WorklogService worklogService;
 

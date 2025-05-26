@@ -9,6 +9,7 @@ import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.WorklogService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/worklog")
 @RequiredArgsConstructor
+@Tag(name = "Worklog", description = "업무일지 관련 API")
 public class WorklogCommandController {
   private final WorklogService worklogService;
 
