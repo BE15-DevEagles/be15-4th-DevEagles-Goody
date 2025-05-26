@@ -157,6 +157,18 @@ jwt:
   refresh-expiration: 604800000
 
 
+
 # 맞춤법 검사
 spellcheck:
   url: http://localhost:5001/spellcheck
+
+# prometheus 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info
+  endpoint:
+    prometheus:
+      enabled: true
+

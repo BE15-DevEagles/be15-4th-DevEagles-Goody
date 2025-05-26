@@ -95,6 +95,7 @@
 
 <script setup>
   import { onBeforeUnmount, ref, onMounted, computed, watch } from 'vue';
+  import { useToast } from 'vue-toastification';
   import CollapsedSidebar from './CollapsedSidebar.vue';
   import { useSidebar } from './composables/useSidebar';
   import { useTeamStore } from '@/store/team';
@@ -109,6 +110,7 @@
   const teamStore = useTeamStore();
   const chatStore = useChatStore();
   const userStatusStore = useUserStatusStore();
+  const toast = useToast();
 
   // 팀원 목록
   const teamMembers = computed(() => {
@@ -235,7 +237,7 @@
         }
       } catch (error) {
         console.error('채팅방 생성 실패:', error);
-        alert(`채팅방을 열 수 없습니다: ${error.message}`);
+        toast.error(`채팅방을 열 수 없습니다: ${error.message}`);
       }
     }
   };
@@ -248,7 +250,7 @@
   // 일지보기 버튼 클릭 처리
   const viewWorkLog = member => {
     // 현재는 간단하게 알림만 표시
-    alert(`${member.name}님의 작업 로그: 준비 중입니다.`);
+    toast.info(`${member.name}님의 작업 로그: 준비 중입니다.`);
   };
 </script>
 

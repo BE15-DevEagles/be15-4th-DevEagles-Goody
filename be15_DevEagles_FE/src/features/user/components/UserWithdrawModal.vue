@@ -41,6 +41,10 @@
       type: Boolean,
       required: true,
     },
+    closable: {
+      type: Boolean,
+      default: true,
+    },
   });
   const emit = defineEmits(['update:modelValue']);
 

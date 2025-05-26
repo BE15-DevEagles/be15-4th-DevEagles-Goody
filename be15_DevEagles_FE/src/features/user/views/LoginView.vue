@@ -45,13 +45,6 @@
     </template>
   </BaseModal>
 
-  <BaseModal v-model="showRecoverModal" title="Welcome back🎉">
-    <div class="modal-body center-content">계정이 복구되었습니다.</div>
-    <template #footer>
-      <BaseButton type="primary" @click="router.push('/')">확인</BaseButton>
-    </template>
-  </BaseModal>
-
   <FindIdModal v-model="showFindIdModal" @submit="onFindIdSubmit" />
   <FindPwdModal v-model="showFindPwdModal" @submit="onFindPwdSubmit" />
 
@@ -125,7 +118,6 @@
   const errorMessage = ref('');
   const shake = ref(false); // 🔥 shake 트리거
   const showVerifyModal = ref(false);
-  const showRecoverModal = ref(false);
   const showFindIdModal = ref(false);
   const showFindPwdModal = ref(false);
   const showFindIdResModal = ref(false);
@@ -171,7 +163,7 @@
       const res = await login(params.value);
 
       await authStore.setAuth(res.data.data.accessToken);
-      localStorage.setItem('refreshToken', res.data.data.refreshToken);
+      // refreshToken은 HttpOnly 쿠키로 자동 설정됨
 
       const res_valid = await validUserStatus();
       const isValid = res_valid.data.data;
@@ -180,8 +172,6 @@
         showVerifyModal.value = true;
         return;
       }
-
-      if (authStore.returnUser === 'true') showRecoverModal.value(true);
 
       // 로그인 성공 후 홈으로 이동 (채팅 초기화는 auth.js에서 처리)
       await router.push('/');

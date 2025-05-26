@@ -1,4 +1,31 @@
 services:
+  backend:
+    build: ./be15_DevEagles_BE
+    image: gyeongmin03/k8s-boot-ing:latest
+    container_name: backend
+    ports:
+      - "8080:8080"
+    networks:
+      - app-public
+      - app-private
+
+  frontend:
+    build: ./be15_DevEagles_FE
+    image: gyeongmin03/k8s-vue-ing:latest
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - app-public
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-private
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -6,6 +33,8 @@ services:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - app-private
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -19,3 +48,72 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
+    networks:
+      - app-private
+
+  tester:
+    image: alpine
+    container_name: net-tester
+    command: sleep 3600       # 실습용으로 쉘 접근 전용
+    networks:
+      - app-public
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.0
+    container_name: logstash
+    volumes:
+      - ./docker/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    ports:
+      - "5000:5000"
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:9.4.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+networks:
+  app-public:
+    driver: bridge
+  app-private:
+    driver: bridge
+    internal: true
+
+volumes:
+  db_data:
+  es_data:
+  grafana_data:

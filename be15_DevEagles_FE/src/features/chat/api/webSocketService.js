@@ -6,6 +6,29 @@ import { createLogger } from '@/utils/logger.js';
 const logger = createLogger('webSocketService');
 
 let stompClient = null;
+
+// 토큰 유효성 검증 공통 함수
+function validateAndCleanToken() {
+  const token = localStorage.getItem('accessToken');
+  if (!token) return false;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Math.floor(Date.now() / 1000);
+    const isValid = payload.exp && payload.exp >= currentTime;
+
+    if (!isValid) {
+      localStorage.removeItem('accessToken');
+      logger.warn('만료된 토큰 제거됨');
+    }
+
+    return isValid;
+  } catch (error) {
+    localStorage.removeItem('accessToken');
+    logger.warn('유효하지 않은 토큰 제거됨');
+    return false;
+  }
+}
 let subscriptions = {};
 let reconnectAttempts = 0;
 let connectionState = 'disconnected';
@@ -39,11 +62,11 @@ function startHeartbeat() {
       logger.debug('WebSocket 하트비트 확인됨');
     } else {
       logger.warn('WebSocket 연결이 끊어짐 - 재연결 시도');
-      const token = localStorage.getItem('accessToken');
-      if (!isManualDisconnect && token) {
+
+      if (!isManualDisconnect && validateAndCleanToken()) {
         connectWebSocket();
       } else {
-        logger.info('수동 연결 해제 상태이거나 인증 토큰이 없어 재연결하지 않습니다.');
+        logger.info('수동 연결 해제 상태이거나 유효한 인증 토큰이 없어 재연결하지 않습니다.');
         stopHeartbeat();
       }
     }
@@ -82,11 +105,12 @@ function connectWebSocket() {
     return;
   }
 
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    logger.warn('인증 토큰이 없어 웹소켓 연결을 시도하지 않습니다.');
+  if (!validateAndCleanToken()) {
+    logger.warn('유효한 인증 토큰이 없어 웹소켓 연결을 시도하지 않습니다.');
     return;
   }
+
+  const token = localStorage.getItem('accessToken');
 
   notifyConnectionStateChange('connecting');
 
@@ -145,8 +169,11 @@ function connectWebSocket() {
       stopHeartbeat();
       reconnectAttempts++;
 
-      const currentToken = localStorage.getItem('accessToken');
-      if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isManualDisconnect && currentToken) {
+      if (
+        reconnectAttempts < MAX_RECONNECT_ATTEMPTS &&
+        !isManualDisconnect &&
+        validateAndCleanToken()
+      ) {
         const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttempts - 1), 30000);
         logger.info(
           `${delay}ms 후 재연결 시도... (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
@@ -158,8 +185,8 @@ function connectWebSocket() {
       } else {
         if (isManualDisconnect) {
           logger.info('수동 연결 해제 상태로 재연결하지 않습니다.');
-        } else if (!currentToken) {
-          logger.warn('인증 토큰이 없어 재연결하지 않습니다.');
+        } else if (!validateAndCleanToken()) {
+          logger.warn('유효한 인증 토큰이 없어 재연결하지 않습니다.');
         } else {
           logger.error('최대 재연결 시도 횟수를 초과했습니다.');
           notifyConnectionStateChange('failed');
@@ -173,16 +200,19 @@ function connectWebSocket() {
     notifyConnectionStateChange('disconnected');
     stopHeartbeat();
 
-    const currentToken = localStorage.getItem('accessToken');
-    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !isManualDisconnect && currentToken) {
+    if (
+      reconnectAttempts < MAX_RECONNECT_ATTEMPTS &&
+      !isManualDisconnect &&
+      validateAndCleanToken()
+    ) {
       setTimeout(() => {
         connectWebSocket();
       }, BASE_RECONNECT_DELAY);
     } else {
       if (isManualDisconnect) {
         logger.info('수동 연결 해제 상태로 재연결하지 않습니다.');
-      } else if (!currentToken) {
-        logger.warn('인증 토큰이 없어 재연결하지 않습니다.');
+      } else if (!validateAndCleanToken()) {
+        logger.warn('유효한 인증 토큰이 없어 재연결하지 않습니다.');
       }
     }
   });
@@ -190,9 +220,8 @@ function connectWebSocket() {
 
 export function subscribeToChatRoom(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      logger.warn('[subscribeToChatRoom] 인증 토큰이 없어 구독하지 않습니다.');
+    if (!validateAndCleanToken()) {
+      logger.warn('[subscribeToChatRoom] 유효한 인증 토큰이 없어 구독하지 않습니다.');
       return;
     }
 
@@ -249,9 +278,8 @@ export function subscribeToChatRoom(chatRoomId, callback) {
 
 export function subscribeToReadStatus(chatRoomId, callback) {
   if (!stompClient || !stompClient.connected) {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      logger.warn('[subscribeToReadStatus] 인증 토큰이 없어 구독하지 않습니다.');
+    if (!validateAndCleanToken()) {
+      logger.warn('[subscribeToReadStatus] 유효한 인증 토큰이 없어 구독하지 않습니다.');
       return;
     }
 
@@ -410,9 +438,8 @@ export function isWebSocketConnected() {
 }
 
 export function forceReconnect() {
-  const token = localStorage.getItem('accessToken');
-  if (!token) {
-    logger.warn('[forceReconnect] 인증 토큰이 없어 재연결하지 않습니다.');
+  if (!validateAndCleanToken()) {
+    logger.warn('[forceReconnect] 유효한 인증 토큰이 없어 재연결하지 않습니다.');
     return;
   }
 
@@ -429,9 +456,8 @@ export function forceReconnect() {
 
 export function subscribeToUserStatus(callback) {
   if (!stompClient || !stompClient.connected) {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      logger.warn('[subscribeToUserStatus] 인증 토큰이 없어 구독하지 않습니다.');
+    if (!validateAndCleanToken()) {
+      logger.warn('[subscribeToUserStatus] 유효한 인증 토큰이 없어 구독하지 않습니다.');
       return;
     }
 

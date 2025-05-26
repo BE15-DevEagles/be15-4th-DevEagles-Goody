@@ -20,10 +20,6 @@ async function refreshUserToken() {
     `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
     {},
     {
-      headers: {
-        Authorization: `Bearer ${refreshToken}`,
-        'Content-Type': 'application/json',
-      },
       withCredentials: true,
     }
   );

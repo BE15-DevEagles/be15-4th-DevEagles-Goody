@@ -7,6 +7,22 @@
     </div>
 
     <div class="overflow-y-auto h-full" style="height: calc(100% - 49px)">
+      <!-- 팀이 선택되지 않았을 때 -->
+      <div v-if="!currentTeamId" class="p-6 text-center">
+        <div class="text-[var(--color-gray-400)] mb-2">
+          <svg class="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+          </svg>
+        </div>
+        <p class="font-small text-[var(--color-gray-500)]">팀을 선택해주세요</p>
+      </div>
+
+      <!-- 팀원 목록 -->
       <div
         v-for="(member, idx) in teamMembersWithStatus"
         :key="member.userId || idx"
@@ -131,11 +147,17 @@
 
 <script setup>
   import { defineProps, defineEmits, watch, computed } from 'vue';
+  import { useToast } from 'vue-toastification';
   import { useAuthStore } from '@/store/auth';
   import { useUserStatusStore } from '@/store/userStatus';
+  import { useTeamStore } from '@/store/team';
+  import { storeToRefs } from 'pinia';
 
   const authStore = useAuthStore();
   const userStatusStore = useUserStatusStore();
+  const teamStore = useTeamStore();
+  const { currentTeamId } = storeToRefs(teamStore);
+  const toast = useToast();
 
   /**
    * Props:
@@ -162,6 +184,11 @@
 
   // 실제 온라인 상태를 반영한 팀원 목록
   const teamMembersWithStatus = computed(() => {
+    // 팀이 선택되지 않았으면 빈 배열 반환
+    if (!currentTeamId.value) {
+      return [];
+    }
+
     return props.teamMembers.map(member => ({
       ...member,
       isOnline: isCurrentUser(member.userId) ? true : userStatusStore.isUserOnline(member.userId),
@@ -228,7 +255,7 @@
 
   // 업무일지 보기 핸들러
   const handleViewWorklog = member => {
-    alert('업무일지 기능은 아직 구현되지 않았습니다.');
+    toast.info('업무일지 기능은 아직 구현되지 않았습니다.');
   };
 
   // 채팅 시작 핸들러
