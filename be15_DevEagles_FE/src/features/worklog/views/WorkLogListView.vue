@@ -142,25 +142,13 @@
 
 <template>
   <section class="p-4">
-    <div class="d-flex gap-2 mb-3 justify-content-between align-items-center">
+    <!-- 업무일지 작성 버튼: 검색창 위로 -->
+    <div class="d-flex justify-content-end mb-2">
       <BaseButton class="btn btn-accent" @click="goToCreatePage">업무일지 작성</BaseButton>
-      <div class="d-flex gap-2">
-        <BaseButton
-          class="btn tab-toggle"
-          :class="{ selected: worklogScope === 'team' }"
-          @click="switchScope('team')"
-          >팀별 업무일지</BaseButton
-        >
-        <BaseButton
-          class="btn tab-toggle"
-          :class="{ selected: worklogScope === 'mine' }"
-          @click="switchScope('mine')"
-          >내 업무일지</BaseButton
-        >
-      </div>
     </div>
 
-    <div class="d-flex align-items-center search-box">
+    <!-- 검색창 -->
+    <div class="d-flex align-items-center search-box mb-3">
       <select v-model="searchType" class="input select-type">
         <option value="all">전체</option>
         <option value="author">작성자</option>
@@ -194,32 +182,18 @@
       </div>
     </div>
 
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <!-- 왼쪽: 최신순 정렬 -->
-      <div class="d-flex align-items-center">
-        <select v-model="sortType" class="input" style="width: 7.2rem; height: 42px">
-          <option value="latest">최신순</option>
-          <option value="created">등록순</option>
-        </select>
-      </div>
-
-      <!-- 가운데: 날짜 범위 표시 -->
-      <div class="d-flex justify-content-center flex-grow-1">
-        <div class="selected-range-label text-nowrap">{{ displayDateRange }}</div>
-      </div>
-
-      <!-- 오른쪽: 날짜 선택 및 초기화 버튼 -->
+    <!-- 날짜 범위 + 날짜 선택/초기화 버튼 -->
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-2">
+      <div class="selected-range-label text-nowrap">{{ displayDateRange }}</div>
       <div class="d-flex align-items-center gap-2">
-        <BaseButton
-          class="btn-secondary btn-date-picker-toggle"
-          @click="showDatePicker = !showDatePicker"
+        <BaseButton class="btn-date-small" @click="showDatePicker = !showDatePicker"
+          >날짜 선택</BaseButton
         >
-          날짜 선택
-        </BaseButton>
-        <BaseButton class="btn-initialize" @click="clearDates">초기화</BaseButton>
+        <BaseButton class="btn-date-small" @click="clearDates">초기화</BaseButton>
       </div>
     </div>
 
+    <!-- 날짜 선택 팝업 -->
     <div v-if="showDatePicker" class="calendar-container mt-2">
       <DatePicker
         v-model="dateRange"
@@ -232,13 +206,38 @@
       />
     </div>
 
+    <!-- 테이블 상단: 팀별/내 업무일지 + 정렬 드롭다운 같은 줄 -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="d-flex gap-2">
+        <BaseButton
+          class="btn tab-toggle"
+          :class="{ selected: worklogScope === 'team' }"
+          @click="switchScope('team')"
+        >
+          팀별 업무일지
+        </BaseButton>
+        <BaseButton
+          class="btn tab-toggle"
+          :class="{ selected: worklogScope === 'mine' }"
+          @click="switchScope('mine')"
+        >
+          내 업무일지
+        </BaseButton>
+      </div>
+      <select v-model="sortType" class="input sort-dropdown" style="min-width: 120px">
+        <option value="latest">최신순</option>
+        <option value="created">등록순</option>
+      </select>
+    </div>
+
+    <!-- 테이블 -->
     <div class="table-responsive">
-      <table class="table table-striped text-center w-100" style="table-layout: fixed">
+      <table class="table table-striped w-100" style="table-layout: fixed">
         <thead>
           <tr>
-            <th style="width: 20%">작성자</th>
-            <th style="width: 60%">제목</th>
-            <th style="width: 20%">작성일자</th>
+            <th style="width: 20%; text-align: center">작성자</th>
+            <th style="width: 60%; text-align: center">제목</th>
+            <th style="width: 20%; text-align: center">작성일자</th>
           </tr>
         </thead>
         <tbody>
@@ -255,6 +254,7 @@
       </table>
     </div>
 
+    <!-- 페이지네이션 -->
     <div class="mt-5 d-flex justify-content-center">
       <Pagination
         :key="`${totalPages}-${currentPage}`"
@@ -267,18 +267,13 @@
 </template>
 
 <style scoped>
-  .btn-date-picker-toggle {
-    height: 32px;
-    font-size: 14px;
-    padding: 0 12px;
-    min-width: 8rem;
-  }
-
   .selected-range-label {
     font-weight: 500;
     font-size: 14px;
-    width: 14rem;
     color: var(--color-gray-600);
+    text-align: center;
+    line-height: 32px;
+    height: 32px;
   }
 
   .tab-toggle {
@@ -330,13 +325,22 @@
     background-color: var(--color-primary-400);
   }
 
-  .btn-initialize {
+  .btn-initialize,
+  .btn-date-small {
     background-color: var(--color-primary-main);
     color: var(--color-neutral-white);
-    padding: 8px 36px;
-    font-size: 13px;
-    font-weight: 700;
+    padding: 4px 12px;
+    font-size: 12px;
+    font-weight: 600;
     border-radius: 0.5rem;
     white-space: nowrap;
+    height: 28px;
+  }
+
+  .sort-dropdown {
+    width: 6rem;
+    height: 32px;
+    font-size: 13px;
+    padding: 4px 8px;
   }
 </style>
