@@ -1,6 +1,6 @@
 <template>
   <div class="roulette-container">
-    <h2 class="roulette-title">룰렛</h2>
+    <h2 class="roulette-title"></h2>
     <form class="option-form" @submit.prevent="addOption">
       <input
         v-model="newOption"
@@ -80,14 +80,11 @@
       </div>
     </div>
 
-    <!-- ★ 역동적인 결과 표시 -->
     <div v-if="result !== null" class="result-box" :class="{ 'result-animate': showResult }">
-      <!-- 파티클 효과 -->
       <div class="particles">
         <div v-for="i in 20" :key="i" class="particle" :style="getParticleStyle(i)"></div>
       </div>
 
-      <!-- 메인 결과 -->
       <div class="result-main">
         <div class="result-emoji">🎉</div>
         <div class="result-winner">
@@ -139,7 +136,6 @@
   const rotation = ref(0);
   const result = ref(null);
 
-  // ★ 결과 애니메이션 상태 추가
   const showResult = ref(false);
 
   const showConfirmModal = ref(false);
@@ -188,7 +184,6 @@
     showConfirmModal.value = false;
   }
 
-  // ★ 파티클 스타일 생성
   function getParticleStyle(index) {
     const angle = (index * 360) / 20;
     const delay = index * 0.1;
@@ -198,7 +193,6 @@
     };
   }
 
-  // ★ 컨페티 스타일 생성
   function getConfettiStyle(index) {
     const delay = index * 0.2;
     const duration = 2 + Math.random() * 2;
@@ -279,7 +273,6 @@
         const angle = ((rotation.value % 360) + 360) % 360;
         result.value = getResultIndex(n, angle);
 
-        // ★ 결과 애니메이션 시작
         setTimeout(() => {
           showResult.value = true;
         }, 200);
@@ -417,14 +410,12 @@
     transition: box-shadow 0.3s ease;
   }
 
-  /* ★ 룰렛 돌아갈 때 효과 */
   .wheel-spinning {
     box-shadow:
       0 4px 24px rgba(37, 113, 128, 0.3),
       0 0 40px rgba(255, 215, 0, 0.4);
   }
 
-  /* ★ 당첨 slice 효과 */
   .winning-slice {
     filter: brightness(1.3) drop-shadow(0 0 10px gold);
     animation: pulse-slice 1s ease-in-out infinite;
@@ -448,7 +439,6 @@
     transition: all 0.3s ease;
   }
 
-  /* ★ 바늘 글로우 효과 */
   .pointer-glow {
     color: #ffd700;
     text-shadow:
@@ -466,7 +456,6 @@
     pointer-events: none;
   }
 
-  /* ★ 역동적인 결과 박스 */
   .result-box {
     position: relative;
     text-align: center;
@@ -485,7 +474,6 @@
     animation: result-appear 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 
-  /* ★ 파티클 효과 */
   .particles {
     position: absolute;
     top: 50%;
@@ -535,7 +523,6 @@
     animation: text-scale 1.2s ease-in-out infinite;
   }
 
-  /* ★ 컨페티 효과 */
   .result-confetti {
     margin: 16px 0;
   }
@@ -607,7 +594,6 @@
     background: #1e5a6a;
   }
 
-  /* ★ 애니메이션 정의 */
   @keyframes result-appear {
     0% {
       opacity: 0;
