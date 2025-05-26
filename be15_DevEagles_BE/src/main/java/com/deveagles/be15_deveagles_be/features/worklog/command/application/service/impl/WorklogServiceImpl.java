@@ -144,7 +144,7 @@ public class WorklogServiceImpl implements WorklogService {
   @Override
   public WorklogDetailResponse createWorklog(
       Long userId, Long teamId, WorklogCreateRequest worklogCreateRequest) {
-    if (worklogRepository.existsByTeamIdAndWrittenAt(teamId, worklogCreateRequest.getWrittenAt())) {
+    if (worklogRepository.existsByUserIdAndWrittenAt(userId, worklogCreateRequest.getWrittenAt())) {
       throw new WorklogBusinessException(WorklogErrorCode.WORKLOG_ALREADY_EXISTS);
     }
     validateUserExists(userId);
