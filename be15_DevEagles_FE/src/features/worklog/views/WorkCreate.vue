@@ -55,14 +55,25 @@
   ];
 
   onMounted(async () => {
-    if (form.value.teamId) {
-      await teamStore.setCurrentTeam(form.value.teamId);
-      form.value.teamname = teamStore.currentTeam?.teamName || '가상팀';
-    }
-
-    // 오늘 날짜로 기본 설정
+    // 오늘 날짜로 기본 설정 (즉시 실행)
     const today = new Date().toISOString().split('T')[0];
     form.value.date = today;
+
+    // 팀 정보가 이미 있는 경우 바로 사용
+    if (form.value.teamId && teamStore.currentTeamId === form.value.teamId) {
+      form.value.teamname = teamStore.currentTeam?.teamName || '가상팀';
+      return;
+    }
+
+    if (form.value.teamId) {
+      try {
+        await teamStore.setCurrentTeamLite(form.value.teamId);
+        form.value.teamname = teamStore.currentTeam?.teamName || '가상팀';
+      } catch (error) {
+        console.error('팀 설정 실패:', error);
+        form.value.teamname = '가상팀';
+      }
+    }
   });
 
   function nextStep() {

@@ -1,121 +1,131 @@
 <template>
-  <div class="roulette-container">
-    <h2 class="roulette-title"></h2>
-    <form class="option-form" @submit.prevent="addOption">
-      <input
-        v-model="newOption"
-        type="text"
-        class="option-input"
-        placeholder="룰렛 옵션을 입력하세요"
-        :maxlength="20"
-      />
-      <button class="add-btn" :disabled="!canAddOption">추가</button>
-    </form>
-    <div class="option-list">
-      <span v-for="(option, idx) in currentOptions" :key="idx" class="option-chip">
-        {{ option }}
-        <button class="delete-btn" @click="removeOption(idx)">×</button>
-      </span>
-    </div>
-
-    <div v-if="currentOptions.length > 0" class="reset-section">
-      <button class="reset-btn" @click="showConfirmModal = true">모든 옵션 초기화</button>
-    </div>
-
-    <button
-      class="spin-btn"
-      :disabled="currentOptions.length < 2 || currentOptions.length > 10 || spinning"
-      @click="spinRoulette"
-    >
-      룰렛 돌리기
-    </button>
-
-    <div class="roulette-wheel-wrap">
-      <svg
-        v-if="currentOptions.length >= 2"
-        class="roulette-wheel"
-        :class="{ 'wheel-spinning': spinning }"
-        :width="size"
-        :height="size"
-        :viewBox="`0 0 ${size} ${size}`"
-      >
-        <g :transform="`rotate(${rotation % 360}, ${center}, ${center})`">
-          <path
-            v-for="(option, idx) in currentOptions"
-            :key="'path-' + idx"
-            :d="getSlicePath(idx)"
-            :fill="getColor(idx)"
-            class="wheel-slice"
-            :class="{ 'winning-slice': result === idx && showResult }"
-          />
-          <!-- slice 경계선 -->
-          <line
-            v-for="(option, idx) in currentOptions"
-            :key="'line-' + idx"
-            :x1="center"
-            :y1="center"
-            :x2="center + radius * Math.cos(getSliceStartAngle(idx))"
-            :y2="center + radius * Math.sin(getSliceStartAngle(idx))"
-            stroke="black"
-            stroke-width="1"
-          />
-          <text
-            v-for="(option, idx) in currentOptions"
-            :key="'text-' + idx"
-            :x="getTextPos(idx).x"
-            :y="getTextPos(idx).y"
-            class="wheel-text"
-            :class="{ 'winning-text': result === idx && showResult }"
-          >
-            {{ option }}
-          </text>
-        </g>
-      </svg>
-      <div
-        v-if="currentOptions.length >= 2"
-        class="pointer"
-        :class="{ 'pointer-glow': showResult }"
-      >
-        ▼
-      </div>
-    </div>
-
-    <div v-if="result !== null" class="result-box" :class="{ 'result-animate': showResult }">
-      <div class="particles">
-        <div v-for="i in 20" :key="i" class="particle" :style="getParticleStyle(i)"></div>
-      </div>
-
-      <div class="result-main">
-        <div class="result-emoji">🎉</div>
-        <div class="result-winner">
-          <span class="result-label">당첨!</span>
-          <span class="result-text">{{ currentOptions[result] }}</span>
+  <div class="page">
+    <div class="roulette-page">
+      <div class="card">
+        <div class="roulette-top-section">
+          <h2 class="font-section-title">룰렛</h2>
         </div>
-        <div class="result-confetti">
-          <span v-for="i in 8" :key="i" class="confetti-piece" :style="getConfettiStyle(i)">
-            {{ ['🎊', '🎈', '✨', '🎆', '🌟', '💫', '🎇', '🎁'][i % 8] }}
+
+        <form class="option-form" @submit.prevent="addOption">
+          <input
+            v-model="newOption"
+            type="text"
+            class="option-input"
+            placeholder="룰렛 옵션을 입력하세요"
+            :maxlength="20"
+          />
+          <button class="add-btn" :disabled="!canAddOption">추가</button>
+        </form>
+
+        <div class="option-list">
+          <span v-for="(option, idx) in currentOptions" :key="idx" class="option-chip">
+            {{ option }}
+            <button class="delete-btn" @click="removeOption(idx)">×</button>
           </span>
         </div>
-      </div>
 
-      <div class="mt-3">
-        <button class="chat-btn chat-btn-animated" @click="sendToChat">
-          <span class="btn-icon">📤</span>
-          채팅방으로 전송하기
+        <div v-if="currentOptions.length > 0" class="reset-section">
+          <button class="reset-btn" @click="showConfirmModal = true">모든 옵션 초기화</button>
+        </div>
+
+        <button
+          class="spin-btn"
+          :disabled="currentOptions.length < 2 || currentOptions.length > 10 || spinning"
+          @click="spinRoulette"
+        >
+          룰렛 돌리기
         </button>
+
+        <div class="roulette-wheel-wrap">
+          <svg
+            v-if="currentOptions.length >= 2"
+            class="roulette-wheel"
+            :class="{ 'wheel-spinning': spinning }"
+            :width="size"
+            :height="size"
+            :viewBox="`0 0 ${size} ${size}`"
+          >
+            <g :transform="`rotate(${rotation % 360}, ${center}, ${center})`">
+              <path
+                v-for="(option, idx) in currentOptions"
+                :key="'path-' + idx"
+                :d="getSlicePath(idx)"
+                :fill="getColor(idx)"
+                class="wheel-slice"
+                :class="{ 'winning-slice': result === idx && showResult }"
+              />
+              <!-- slice 경계선 -->
+              <line
+                v-for="(option, idx) in currentOptions"
+                :key="'line-' + idx"
+                :x1="center"
+                :y1="center"
+                :x2="center + radius * Math.cos(getSliceStartAngle(idx))"
+                :y2="center + radius * Math.sin(getSliceStartAngle(idx))"
+                stroke="black"
+                stroke-width="1"
+              />
+              <text
+                v-for="(option, idx) in currentOptions"
+                :key="'text-' + idx"
+                :x="getTextPos(idx).x"
+                :y="getTextPos(idx).y"
+                class="wheel-text"
+                :class="{ 'winning-text': result === idx && showResult }"
+              >
+                {{ option }}
+              </text>
+            </g>
+          </svg>
+          <div
+            v-if="currentOptions.length >= 2"
+            class="pointer"
+            :class="{ 'pointer-glow': showResult }"
+          >
+            ▼
+          </div>
+        </div>
+
+        <div v-if="result !== null" class="result-box" :class="{ 'result-animate': showResult }">
+          <div class="particles">
+            <div v-for="i in 20" :key="i" class="particle" :style="getParticleStyle(i)"></div>
+          </div>
+
+          <div class="result-main">
+            <div class="result-emoji">🎉</div>
+            <div class="result-winner">
+              <span class="result-label">당첨!</span>
+              <span class="result-text">{{ currentOptions[result] }}</span>
+            </div>
+            <div class="result-confetti">
+              <span v-for="i in 8" :key="i" class="confetti-piece" :style="getConfettiStyle(i)">
+                {{ ['🎊', '🎈', '✨', '🎆', '🌟', '💫', '🎇', '🎁'][i % 8] }}
+              </span>
+            </div>
+          </div>
+
+          <div class="result-actions">
+            <button class="chat-btn chat-btn-animated" @click="sendToChat">
+              <span class="btn-icon">📤</span>
+              채팅방으로 전송하기
+            </button>
+          </div>
+        </div>
+
+        <BaseModal v-model="showConfirmModal" title="초기화 확인">
+          <template #default>
+            <p>모든 옵션을 초기화 하시겠습니까?</p>
+            <p class="modal-info">(현재 {{ currentOptions.length }}개 옵션)</p>
+          </template>
+          <template #footer>
+            <button class="modal-btn modal-btn-cancel" @click="showConfirmModal = false">
+              취소
+            </button>
+            <button class="modal-btn modal-btn-confirm" @click="confirmReset">확인</button>
+          </template>
+        </BaseModal>
       </div>
     </div>
-
-    <BaseModal v-model="showConfirmModal" title="초기화 확인">
-      <template #default>
-        <p>모든 옵션을 초기화 하시겠습니까?</p>
-        <p class="modal-info">(현재 {{ currentOptions.length }}개 옵션)</p>
-      </template>
-      <template #footer>
-        <button class="modal-btn modal-btn-cancel" @click="showConfirmModal = false">취소</button>
-        <button class="modal-btn modal-btn-confirm" @click="confirmReset">확인</button>
-      </template>
-    </BaseModal>
   </div>
 </template>
 
@@ -296,116 +306,188 @@
 </script>
 
 <style scoped>
-  .roulette-container {
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.08);
-    padding: 40px 32px;
-    margin: 40px auto;
-    max-width: 480px;
-    min-width: 340px;
+  /* 페이지 레이아웃 */
+  .page {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
   }
-  .roulette-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #000;
-    margin-bottom: 24px;
+
+  .roulette-page {
+    display: flex;
+    width: 100%;
+    max-width: 600px;
+    box-sizing: border-box;
+    padding: 1.5rem;
+  }
+
+  /* 카드 스타일 */
+  .card {
+    background: var(--color-neutral-white);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 8px 40px -10px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 룰렛 상단 섹션 */
+  .roulette-top-section {
+    margin-bottom: 1.5rem;
     text-align: center;
+    width: 100%;
   }
+
+  /* 옵션 폼 */
   .option-form {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 400px;
   }
+
   .option-input {
     flex: 1;
-    padding: 10px 14px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
+    padding: 0.75rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: border-color 0.2s ease;
   }
+
+  .option-input:focus {
+    outline: none;
+    border-color: var(--color-primary-300);
+  }
+
   .add-btn {
-    background: var(--color-primary-300, #257180);
-    color: #fff;
+    background: var(--color-primary-main);
+    color: var(--color-neutral-white);
     border: none;
-    padding: 10px 18px;
-    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 0.875rem;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s ease;
+    font-family: 'Noto Sans KR', sans-serif;
   }
+
+  .add-btn:hover:not(:disabled) {
+    background: var(--color-primary-400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
   .add-btn:disabled {
-    background: #bdbdbd;
+    background: var(--color-gray-300);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
+
+  /* 옵션 리스트 */
   .option-list {
-    margin-bottom: 18px;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
   }
+
   .option-chip {
     display: inline-flex;
     align-items: center;
-    background: #e6f1f3;
-    color: #257180;
-    border-radius: 16px;
-    padding: 6px 14px;
-    margin: 0 6px 6px 0;
-    font-size: 1rem;
+    background: var(--color-primary-50);
+    color: var(--color-primary-main);
+    border-radius: 1rem;
+    padding: 0.5rem 0.875rem;
+    margin: 0 0.25rem 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 500;
   }
+
   .delete-btn {
     background: none;
     border: none;
-    color: #e74c3c;
-    font-size: 1.1rem;
-    margin-left: 4px;
+    color: var(--color-error-main);
+    font-size: 1rem;
+    margin-left: 0.25rem;
     cursor: pointer;
+    font-weight: bold;
   }
 
+  /* 리셋 섹션 */
   .reset-section {
-    margin-bottom: 18px;
+    margin-bottom: 1rem;
     text-align: center;
   }
+
   .reset-btn {
-    background: #e74c3c;
-    color: #fff;
+    background: var(--color-error-main);
+    color: var(--color-neutral-white);
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
-  }
-  .reset-btn:hover {
-    background: #c0392b;
+    transition: all 0.2s ease;
+    font-family: 'Noto Sans KR', sans-serif;
   }
 
+  .reset-btn:hover {
+    background: var(--color-error-400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 스핀 버튼 */
   .spin-btn {
     width: 100%;
-    background: var(--color-primary-300, #257180);
-    color: #fff;
+    max-width: 400px;
+    background: var(--color-primary-main);
+    color: var(--color-neutral-white);
     border: none;
-    padding: 14px 0;
-    border-radius: 10px;
+    padding: 1rem;
+    border-radius: 0.5rem;
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1.125rem;
     cursor: pointer;
-    margin-bottom: 24px;
-    transition: background 0.2s;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+    font-family: 'Noto Sans KR', sans-serif;
   }
+
+  .spin-btn:hover:not(:disabled) {
+    background: var(--color-primary-400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
   .spin-btn:disabled {
-    background: #bdbdbd;
+    background: var(--color-gray-300);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
+
+  /* 룰렛 휠 */
   .roulette-wheel-wrap {
     position: relative;
     width: 320px;
     height: 320px;
-    margin: 0 auto 18px auto;
+    margin: 0 auto 1.5rem auto;
   }
+
   .roulette-wheel {
     border-radius: 50%;
-    background: #f8f8f8;
+    background: var(--color-gray-50);
     box-shadow: 0 2px 12px rgba(37, 113, 128, 0.08);
     transition: box-shadow 0.3s ease;
   }
@@ -432,10 +514,10 @@
     top: -18px;
     transform: translateX(-50%);
     font-size: 2.2rem;
-    color: #e74c3c;
+    color: var(--color-error-main);
     user-select: none;
     font-weight: bold;
-    text-shadow: 0 2px 8px #fff;
+    text-shadow: 0 2px 8px var(--color-neutral-white);
     transition: all 0.3s ease;
   }
 
@@ -449,25 +531,28 @@
 
   .wheel-text {
     font-size: 1.03rem;
-    fill: #222;
+    fill: var(--color-gray-800);
     text-anchor: middle;
     alignment-baseline: middle;
     font-weight: 600;
     pointer-events: none;
   }
 
+  /* 결과 박스 */
   .result-box {
     position: relative;
     text-align: center;
-    font-size: 1.22rem;
+    font-size: 1.125rem;
     font-weight: bold;
-    color: #257180;
-    margin-top: 18px;
-    padding: 20px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+    color: var(--color-primary-main);
+    margin-top: 1rem;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    background: linear-gradient(135deg, var(--color-neutral-white) 0%, var(--color-gray-50) 100%);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     overflow: hidden;
+    width: 100%;
+    max-width: 400px;
   }
 
   .result-animate {
@@ -499,55 +584,59 @@
   .result-emoji {
     font-size: 3rem;
     animation: emoji-bounce 1s ease-in-out infinite;
-    margin-bottom: 10px;
+    margin-bottom: 0.75rem;
   }
 
   .result-winner {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
 
   .result-label {
-    font-size: 1.1rem;
-    color: #666;
+    font-size: 1rem;
+    color: var(--color-gray-600);
     font-weight: 600;
   }
 
   .result-text {
-    color: #e74c3c;
-    font-size: 2rem;
+    color: var(--color-error-main);
+    font-size: 1.75rem;
     font-weight: 800;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
     animation: text-scale 1.2s ease-in-out infinite;
   }
 
   .result-confetti {
-    margin: 16px 0;
+    margin: 1rem 0;
   }
 
   .confetti-piece {
     display: inline-block;
     font-size: 1.5rem;
-    margin: 0 4px;
+    margin: 0 0.25rem;
     animation: confetti-fall var(--duration, 3s) ease-in-out var(--delay, 0s) infinite;
   }
 
+  .result-actions {
+    margin-top: 1rem;
+  }
+
   .chat-btn {
-    margin-top: 10px;
-    padding: 12px 24px;
-    background: #257180;
-    color: #fff;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-primary-main);
+    color: var(--color-neutral-white);
     border: none;
-    border-radius: 8px;
-    font-size: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
+    font-family: 'Noto Sans KR', sans-serif;
   }
 
   .chat-btn-animated {
@@ -555,45 +644,57 @@
   }
 
   .btn-icon {
-    font-size: 1.2rem;
+    font-size: 1.125rem;
   }
 
   .chat-btn:hover {
-    background: #1e5a6a;
+    background: var(--color-primary-400);
     transform: translateY(-2px);
     box-shadow: 0 8px 16px rgba(37, 113, 128, 0.3);
   }
 
+  /* 모달 스타일 */
   .modal-info {
-    font-size: 0.9rem;
-    color: #888;
-    margin-top: 8px;
-  }
-  .modal-btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
-    margin-left: 8px;
-  }
-  .modal-btn-cancel {
-    background: #e74c3c;
-    color: #fff;
-  }
-  .modal-btn-cancel:hover {
-    background: #c0392b;
-  }
-  .modal-btn-confirm {
-    background: #257180;
-    color: #fff;
-  }
-  .modal-btn-confirm:hover {
-    background: #1e5a6a;
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+    margin-top: 0.5rem;
   }
 
+  .modal-btn {
+    padding: 0.75rem 1.25rem;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-left: 0.5rem;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .modal-btn-cancel {
+    background: var(--color-error-main);
+    color: var(--color-neutral-white);
+  }
+
+  .modal-btn-cancel:hover {
+    background: var(--color-error-400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .modal-btn-confirm {
+    background: var(--color-primary-main);
+    color: var(--color-neutral-white);
+  }
+
+  .modal-btn-confirm:hover {
+    background: var(--color-primary-400);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 애니메이션 */
   @keyframes result-appear {
     0% {
       opacity: 0;
@@ -660,7 +761,7 @@
   @keyframes text-glow {
     0%,
     100% {
-      fill: #222;
+      fill: var(--color-gray-800);
     }
     50% {
       fill: #ffd700;
