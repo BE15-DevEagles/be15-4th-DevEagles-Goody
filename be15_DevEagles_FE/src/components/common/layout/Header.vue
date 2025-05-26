@@ -68,21 +68,21 @@
               <div class="flex items-center space-x-3">
                 <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                   <img
-                    v-if="user.userThumbnail"
-                    :src="user.userThumbnail"
-                    :alt="user.name"
+                    v-if="userThumbnailUrl"
+                    :src="userThumbnailUrl"
+                    :alt="name"
                     class="w-full h-full object-cover"
                   />
                   <div
                     v-else
                     class="w-full h-full flex items-center justify-center bg-[var(--color-primary-300)] text-white font-one-liner-semibold text-sm"
                   >
-                    {{ user.name ? user.name.charAt(0) : '?' }}
+                    {{ name ? name.charAt(0) : '?' }}
                   </div>
                 </div>
                 <div class="flex-grow min-w-0">
                   <p class="font-one-liner-semibold text-[var(--color-gray-800)] truncate">
-                    {{ user.name }}
+                    {{ name }}
                   </p>
                   <p class="text-xs text-[var(--color-gray-500)]">온라인</p>
                 </div>
