@@ -60,7 +60,7 @@ class WorklogServiceImplTest {
             .writtenAt(writtenAt)
             .build();
 
-    when(worklogRepository.existsByTeamIdAndWrittenAt(teamId, writtenAt)).thenReturn(false);
+    when(worklogRepository.existsByUserIdAndWrittenAt(userId, writtenAt)).thenReturn(false);
     when(userCommandService.getUserDetails(userId))
         .thenReturn(UserDetailResponse.builder().userId(userId).userName("홍길동").build());
     when(teamCommandService.getTeamDetail(teamId))
@@ -194,6 +194,7 @@ class WorklogServiceImplTest {
   @Test
   @DisplayName("중복된 날짜에 업무일지 등록 시 예외 발생")
   void createWorklog_fail_whenDuplicateWrittenAtExists() {
+    // given
     Long userId = 1L;
     Long teamId = 100L;
     LocalDateTime writtenAt = LocalDateTime.of(2025, 5, 24, 0, 0);
@@ -207,8 +208,10 @@ class WorklogServiceImplTest {
             .writtenAt(writtenAt)
             .build();
 
-    when(worklogRepository.existsByTeamIdAndWrittenAt(teamId, writtenAt)).thenReturn(true);
+    // when
+    when(worklogRepository.existsByUserIdAndWrittenAt(eq(userId), eq(writtenAt))).thenReturn(true);
 
+    // then
     assertThrows(
         WorklogBusinessException.class,
         () -> worklogService.createWorklog(userId, teamId, request));
