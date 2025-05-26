@@ -157,55 +157,118 @@
 </script>
 
 <style scoped>
+  /* 입력 필드 스타일 */
   .input {
-    padding: 10px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 16px;
-    height: 42px;
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+    background: var(--color-neutral-white);
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 21px;
+    color: var(--color-neutral-dark);
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
   }
 
+  .input:focus {
+    outline: none;
+    border-color: var(--color-primary-main);
+    box-shadow: 0 0 0 2px rgba(37, 113, 128, 0.2);
+  }
+
+  /* 투두 폼 그룹 */
   .todo-form-group {
-    border: 1px solid #ccc;
-    padding: 1rem;
+    border: 1px solid var(--color-gray-200);
+    padding: 1.5rem;
     margin-bottom: 1rem;
-    border-radius: 8px;
+    border-radius: 0.75rem;
     position: relative;
-    background-color: var(--color-neutral-white);
+    background: var(--color-gray-50);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    font-family: 'Noto Sans KR', sans-serif;
   }
 
+  /* 폼 행 */
   .form-row {
     display: flex;
     flex-direction: column;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
   }
 
+  .form-row:last-child {
+    margin-bottom: 0;
+  }
+
+  /* 라벨 스타일 */
+  .form-row label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 16px;
+    color: var(--color-gray-700);
+  }
+
+  /* 제거 버튼 */
   .remove-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 0.75rem;
+    right: 0.75rem;
     padding: 0;
-    width: 28px;
-    height: 28px;
-    font-size: 1.1rem;
-    font-weight: bold;
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    border-radius: 50%;
+    background: var(--color-error-300);
+    color: var(--color-neutral-white);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
+  .remove-btn:hover {
+    background: var(--color-error-400);
+    transform: scale(1.1);
+  }
+
+  /* 추가 버튼 래퍼 */
   .add-btn-wrapper {
     display: flex;
     justify-content: center;
-    margin: 0.5rem 0 0.8rem;
-    font-size: 1.1rem;
-    font-weight: bold;
+    margin: 1rem 0 1.5rem;
   }
 
+  .add-btn-wrapper button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .add-btn-wrapper button:hover {
+    transform: scale(1.1);
+  }
+
+  /* 확인 메시지 */
   .confirm-message {
     padding: 1.5rem;
-    font-size: 1rem;
+    font-size: 16px;
+    font-weight: 600;
     text-align: center;
+    color: var(--color-gray-700);
+    font-family: 'Noto Sans KR', sans-serif;
   }
 </style>

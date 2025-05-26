@@ -9,16 +9,18 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// 토큰 갱신 함수 (HttpOnly 쿠키 사용)
+// 토큰 갱신 함수
 async function refreshUserToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    return Promise.reject(new Error('리프레시 토큰이 없습니다.'));
+  }
+
   return axios.post(
     `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
     {},
     {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      withCredentials: true, // HttpOnly 쿠키 전송을 위해 필요
+      withCredentials: true,
     }
   );
 }

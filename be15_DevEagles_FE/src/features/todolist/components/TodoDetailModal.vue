@@ -232,27 +232,99 @@
   </BaseModal>
 </template>
 
-<style>
-  button[disabled] {
-    background-color: #ccc !important;
-    color: #666 !important;
-    cursor: not-allowed !important;
-  }
+<style scoped>
+  /* 폼 그리드 레이아웃 */
   .info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 1rem;
+    font-family: 'Noto Sans KR', sans-serif;
   }
+
   .form-group.full {
     grid-column: span 2;
   }
-  .dp-sm {
-    font-size: 12px;
-    padding: 6px 10px;
-    height: 34px;
+
+  /* 폼 라벨 스타일 */
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 16px;
+    color: var(--color-gray-700);
   }
 
-  /* v-calendar 달력 내부 스타일 */
+  /* 입력 필드 스타일 */
+  .input {
+    width: 100%;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 0.5rem;
+    background: var(--color-neutral-white);
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    line-height: 21px;
+    color: var(--color-neutral-dark);
+    transition:
+      border-color 120ms ease,
+      box-shadow 120ms ease;
+  }
+
+  .input:focus {
+    outline: none;
+    border-color: var(--color-primary-main);
+    box-shadow: 0 0 0 2px rgba(37, 113, 128, 0.2);
+  }
+
+  .input[readonly] {
+    background: var(--color-gray-50);
+    color: var(--color-gray-600);
+  }
+
+  /* 텍스트에어리어 스타일 */
+  textarea.input {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /* 데이트피커 스타일 */
+  .dp-sm {
+    font-size: 14px;
+    padding: 0.625rem 0.875rem;
+    height: auto;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* 로딩 텍스트 */
+  .text-center {
+    text-align: center;
+  }
+
+  .p-3 {
+    padding: 1rem;
+  }
+
+  .p-4 {
+    padding: 1.5rem;
+  }
+
+  /* 삭제 확인 텍스트 */
+  .text-red-600 {
+    color: var(--color-error-300);
+    font-weight: 600;
+  }
+</style>
+
+<style>
+  /* 전역 스타일 - 버튼 비활성화 */
+  button[disabled] {
+    background-color: var(--color-gray-200) !important;
+    color: var(--color-gray-500) !important;
+    cursor: not-allowed !important;
+  }
+
+  /* v-calendar 달력 스타일 커스터마이징 */
   :root {
     --vc-accent-500: var(--color-primary-main);
     --vc-accent-600: var(--color-primary-400);
@@ -260,12 +332,22 @@
   }
 
   .vc-container {
-    font-size: 12px !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+    font-size: 14px !important;
   }
 
   .vc-nav-title,
   .vc-nav-arrow,
   .vc-day {
-    font-size: 12px !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+    font-size: 14px !important;
+  }
+
+  .vc-nav-title {
+    font-weight: 700 !important;
+  }
+
+  .vc-weekday {
+    font-weight: 600 !important;
   }
 </style>

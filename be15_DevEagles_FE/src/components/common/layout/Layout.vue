@@ -41,7 +41,9 @@
     if (isMyPage.value) return '마이페이지';
     if (route.path === '/calendar/my') return '내 캘린더';
     if (route.path === '/calendar/team') return '팀 캘린더';
-    if (route.path === '/worklog/my') return '업무일지';
+    if (route.path === '/worklog/my') return '업무일지 현황';
+    if (route.path === '/worklog/create') return '업무일지 작성';
+    if (route.path.includes('/worklog/detail')) return '업무일지 상세';
     if (route.path === '/todos') return 'Todo 목록';
     if (route.path.includes('/timecapsule')) return '타임캡슐';
     if (route.path === '/roulette') return '룰렛';
@@ -54,7 +56,9 @@
     if (isMyPage.value) return '';
     if (route.path === '/calendar/my') return '개인 일정 관리';
     if (route.path === '/calendar/team') return '팀 일정 공유 및 관리';
-    if (route.path === '/worklog/my') return '개인 업무 기록 및 관리';
+    if (route.path === '/worklog/my') return '이번 달 현황';
+    if (route.path === '/worklog/create') return '오늘의 업무 성과를 체계적으로 기록하세요';
+    if (route.path.includes('/worklog/detail')) return '업무일지 상세 내용';
     if (route.path === '/todos') return '할 일 관리 및 우선순위 설정';
     if (route.path.includes('/timecapsule')) return '미래를 위한 메시지 보관';
     if (route.path === '/roulette') return '팀 활동 및 의사결정 도구';
