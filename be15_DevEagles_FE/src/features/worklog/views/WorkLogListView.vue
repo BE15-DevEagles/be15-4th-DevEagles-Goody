@@ -329,9 +329,8 @@
       <div class="list-container">
         <div class="list-header">
           <div class="header-col author">작성자</div>
-          <div class="header-col title">제목</div>
+          <div class="header-col title">업무 요약</div>
           <div class="header-col date">작성일자</div>
-          <div class="header-col action">액션</div>
         </div>
         <div class="list-body">
           <div
@@ -341,36 +340,14 @@
             @click="goToDetail(log)"
           >
             <div class="item-col author">
-              <div class="author-info">
-                <div class="author-avatar">{{ log.userName.charAt(0) }}</div>
-                <span class="author-name">{{ log.userName }}</span>
-              </div>
+              <span class="author-name">{{ log.userName }}</span>
             </div>
             <div class="item-col title">
               <div class="worklog-title">{{ log.summary }}</div>
-              <div class="worklog-preview">{{ log.workContent?.substring(0, 60) }}...</div>
+              <div class="worklog-preview">{{ log.workContent?.substring(0, 80) }}</div>
             </div>
             <div class="item-col date">
               <div class="date-primary">{{ log.writtenAt?.slice(0, 10) }}</div>
-              <div class="date-time">{{ log.writtenAt?.slice(11, 16) }}</div>
-            </div>
-            <div class="item-col action">
-              <button class="action-btn view-btn" title="상세보기" @click.stop="goToDetail(log)">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  ></path>
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  ></path>
-                </svg>
-              </button>
             </div>
           </div>
           <div v-if="worklogs.length === 0" class="empty-list">
@@ -710,7 +687,7 @@
 
   .list-header {
     display: grid;
-    grid-template-columns: 20% 50% 20% 10%;
+    grid-template-columns: 20% 60% 20%;
     background: var(--color-gray-50);
     border-bottom: 2px solid var(--color-gray-200);
   }
@@ -733,7 +710,7 @@
 
   .list-item {
     display: grid;
-    grid-template-columns: 20% 50% 20% 10%;
+    grid-template-columns: 20% 60% 20%;
     border-bottom: 1px solid var(--color-gray-200);
     cursor: pointer;
     transition: all 0.2s ease;
@@ -761,27 +738,7 @@
   }
 
   .item-col.author {
-    justify-content: flex-start;
-  }
-
-  .author-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .author-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--color-primary-main);
-    color: var(--color-neutral-white);
-    display: flex;
-    align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: 14px;
-    flex-shrink: 0;
   }
 
   .author-name {
@@ -814,34 +771,6 @@
     font-weight: 600;
     color: var(--color-gray-700);
     font-size: 14px;
-    margin-bottom: 2px;
-  }
-
-  .date-time {
-    font-size: 12px;
-    color: var(--color-gray-500);
-  }
-
-  .action-btn {
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .view-btn {
-    background: var(--color-primary-50);
-    color: var(--color-primary-main);
-  }
-
-  .view-btn:hover {
-    background: var(--color-primary-main);
-    color: var(--color-neutral-white);
   }
 
   .empty-list {
@@ -924,11 +853,6 @@
 
     .item-col.date {
       order: 3;
-    }
-
-    .item-col.action {
-      order: 4;
-      justify-content: flex-end;
     }
   }
 </style>
