@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Worklog Search", description = "업무일지 통합 검색 API")
+@Tag(name = "업무일지 검색", description = "업무일지 통합 검색 API")
 @RequestMapping("/api/v1/search")
 public class SearchInfoController {
 

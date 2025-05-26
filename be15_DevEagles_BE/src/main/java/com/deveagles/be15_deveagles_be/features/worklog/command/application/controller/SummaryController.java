@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/summary")
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Summary", description = "AI 요약 관련 API")
+@Tag(name = "AI 요약", description = "AI 요약 관련 API")
 public class SummaryController {
   private final WorklogService worklogService;
 

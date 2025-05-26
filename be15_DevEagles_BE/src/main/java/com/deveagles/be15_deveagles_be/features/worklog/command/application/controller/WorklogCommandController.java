@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/worklog")
 @RequiredArgsConstructor
-@Tag(name = "Worklog", description = "업무일지 관련 API")
+@Tag(name = "업무일지", description = "업무일지 관련 API")
 public class WorklogCommandController {
   private final WorklogService worklogService;
 
