@@ -1,59 +1,84 @@
 <template>
-  <aside class="bg-[var(--color-gray-800)] h-full w-16 flex flex-col items-center py-4">
+  <aside class="bg-[var(--color-gray-800)] h-full w-24 flex flex-col items-center py-3">
     <!-- 팀 썸네일 목록 -->
-    <div class="flex flex-col items-center space-y-4 overflow-y-auto flex-grow">
+    <div class="flex flex-col items-center space-y-3 overflow-y-auto flex-grow min-h-0 py-2 px-2">
       <div
         v-for="team in teamStore.teams"
         :key="team.teamId"
-        class="w-10 h-10 rounded-md flex items-center justify-center cursor-pointer relative overflow-hidden group transition-all duration-200 shadow-drop"
+        class="w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer relative overflow-visible group transition-all duration-300 ease-out transform hover:scale-110 flex-shrink-0"
         :class="[
           team.teamId === teamStore.currentTeamId
             ? team.teamThumbnailUrl
-              ? ''
-              : 'bg-[var(--color-primary-300)]'
+              ? 'ring-2 ring-[var(--color-primary-400)] ring-offset-2 ring-offset-[var(--color-gray-800)] shadow-lg shadow-[var(--color-primary-400)]/40 scale-105'
+              : 'bg-[var(--color-primary-400)] ring-2 ring-[var(--color-primary-300)] ring-offset-2 ring-offset-[var(--color-gray-800)] shadow-lg shadow-[var(--color-primary-400)]/40 scale-105'
             : team.teamThumbnailUrl
-              ? ''
-              : 'bg-[var(--color-gray-600)] hover:bg-[var(--color-gray-500)]',
+              ? 'hover:ring-2 hover:ring-[var(--color-gray-500)] hover:ring-offset-2 hover:ring-offset-[var(--color-gray-800)] hover:shadow-lg'
+              : 'bg-[var(--color-gray-600)] hover:bg-[var(--color-gray-500)] hover:ring-2 hover:ring-[var(--color-gray-400)] hover:ring-offset-2 hover:ring-offset-[var(--color-gray-800)] hover:shadow-lg',
         ]"
         @click="switchTeam(team.teamId)"
       >
-        <!-- 썸네일 이미지 or 팀 이름 첫 글자 -->
+        <!-- 썸네일 이미지 or 팀 이름 두 글자 -->
         <img
           v-if="team.teamThumbnailUrl"
           :src="team.teamThumbnailUrl"
           :alt="team.teamName"
-          class="w-full h-full object-cover"
+          class="w-full h-full object-cover transition-all duration-300 rounded-xl"
+          :class="
+            team.teamId === teamStore.currentTeamId
+              ? 'brightness-110'
+              : 'group-hover:brightness-110'
+          "
         />
-        <span v-else class="text-white font-xs-semibold">
-          {{ team.teamName?.charAt(0) || '?' }}
+        <span
+          v-else
+          class="text-white font-xs-semibold transition-all duration-300"
+          :class="
+            team.teamId === teamStore.currentTeamId
+              ? 'text-white scale-110'
+              : 'group-hover:scale-110'
+          "
+        >
+          {{ team.teamName?.charAt(0) + team.teamName?.charAt(1) || '?' }}
         </span>
 
-        <!-- 활성 팀 표시기 -->
+        <!-- 활성 팀 표시기 - 더 세련되게 -->
         <div
           v-if="team.teamId === teamStore.currentTeamId"
-          class="absolute -left-1 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-[var(--color-info-500)] rounded-r-full"
+          class="absolute -left-4 top-1/2 transform -translate-y-1/2 w-2 h-6 bg-white rounded-r-lg shadow-md transition-all duration-300"
+        ></div>
+
+        <!-- 선택된 팀 글로우 효과 -->
+        <div
+          v-if="team.teamId === teamStore.currentTeamId"
+          class="absolute inset-0 rounded-xl bg-gradient-to-r from-[var(--color-primary-400)]/20 to-[var(--color-primary-500)]/20 animate-pulse"
         ></div>
 
         <!-- 호버 툴팁 -->
         <div
-          class="absolute left-14 z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-200 bg-[var(--color-gray-800)] text-white px-3 py-2 rounded font-small shadow-drop"
+          class="absolute left-16 top-1/2 transform -translate-y-1/2 z-20 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300 bg-[var(--color-gray-900)] text-white px-3 py-2 rounded-lg font-small shadow-xl border border-[var(--color-gray-600)] backdrop-blur-sm whitespace-nowrap"
         >
           {{ team.teamName || '팀 이름 없음' }}
+          <!-- 툴팁 화살표 -->
+          <div
+            class="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-[var(--color-gray-900)]"
+          ></div>
         </div>
       </div>
     </div>
 
     <!-- 구분선 -->
-    <div class="w-8 h-px bg-[var(--color-gray-600)] my-4"></div>
+    <div
+      class="w-12 h-px bg-gradient-to-r from-transparent via-[var(--color-gray-600)] to-transparent my-3 flex-shrink-0"
+    ></div>
 
     <!-- 팀 생성 버튼 -->
     <div
-      class="w-10 h-10 rounded-md bg-[var(--color-gray-600)] flex items-center justify-center cursor-pointer hover:bg-[var(--color-primary-300)] group relative transition-all duration-200 shadow-drop"
+      class="w-10 h-10 rounded-xl bg-[var(--color-gray-600)] flex items-center justify-center cursor-pointer hover:bg-[var(--color-primary-400)] group relative transition-all duration-300 ease-out transform hover:scale-110 hover:ring-2 hover:ring-[var(--color-primary-300)] hover:ring-offset-2 hover:ring-offset-[var(--color-gray-800)] hover:shadow-lg hover:shadow-[var(--color-primary-400)]/30 flex-shrink-0 mb-2"
       @click="createTeam"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        class="h-5 w-5 text-white"
+        class="h-5 w-5 text-white transition-all duration-300 group-hover:scale-110 group-hover:rotate-90"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -68,9 +93,13 @@
 
       <!-- 호버 툴팁 -->
       <div
-        class="absolute left-14 z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-opacity duration-200 bg-[var(--color-gray-800)] text-white px-3 py-2 rounded font-small shadow-drop"
+        class="absolute left-16 top-1/2 transform -translate-y-1/2 z-20 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300 bg-[var(--color-gray-900)] text-white px-3 py-2 rounded-lg font-small shadow-xl border border-[var(--color-gray-600)] backdrop-blur-sm whitespace-nowrap"
       >
         New Team
+        <!-- 툴팁 화살표 -->
+        <div
+          class="absolute left-0 top-1/2 transform -translate-x-1 -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-[var(--color-gray-900)]"
+        ></div>
       </div>
     </div>
   </aside>

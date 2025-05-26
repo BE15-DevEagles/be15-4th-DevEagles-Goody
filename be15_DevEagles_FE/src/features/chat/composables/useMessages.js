@@ -8,6 +8,9 @@ import {
   groupMessagesByDate,
   isTempMessage,
 } from '../utils/messageUtils';
+import { createLogger } from '@/utils/logger.js';
+
+const logger = createLogger('useMessages');
 
 export function useMessages() {
   const messages = ref([]);
@@ -16,14 +19,14 @@ export function useMessages() {
     if (!message) return false;
 
     if (isDuplicateMessage(messages.value, message)) {
-      console.log('[useMessages] 중복 메시지 무시:', message.id);
+      logger.info('[useMessages] 중복 메시지 무시:', message.id);
       return false;
     }
 
     if (!isTempMessage(message.id)) {
       const tempIndex = findTempMessageIndex(messages.value, message);
       if (tempIndex !== -1) {
-        console.log('[useMessages] 임시 메시지를 실제 메시지로 교체:', {
+        logger.info('[useMessages] 임시 메시지를 실제 메시지로 교체:', {
           tempId: messages.value[tempIndex].id,
           realId: message.id,
         });
@@ -37,7 +40,7 @@ export function useMessages() {
     const formattedMessage = normalizeMessage(message, message.currentUserId);
     messages.value.push(formattedMessage);
 
-    console.log('[useMessages] 메시지 추가:', message.id);
+    logger.info('[useMessages] 메시지 추가:', message.id);
     return true;
   };
 
@@ -45,26 +48,25 @@ export function useMessages() {
     const tempMessage = createTempMessage(content, senderId, senderName);
     messages.value.push(tempMessage);
 
-    console.log('[useMessages] 임시 메시지 추가:', tempMessage.id);
+    logger.info('[useMessages] 임시 메시지 추가:', tempMessage.id);
     return tempMessage;
   };
 
   const groupedMessages = computed(() => groupMessagesByDate(messages.value));
 
   const clearMessages = () => {
-    console.log('[useMessages] 메시지 초기화');
+    logger.info('[useMessages] 메시지 초기화');
     messages.value = [];
   };
 
   const setMessages = (newMessages, currentUserId) => {
-    console.log('[useMessages] 메시지 목록 설정, 개수:', newMessages?.length || 0);
+    logger.info('[useMessages] 메시지 목록 설정, 개수:', newMessages?.length || 0);
 
     if (!newMessages || !Array.isArray(newMessages)) {
-      console.warn('[useMessages] 유효하지 않은 메시지 배열:', newMessages);
+      logger.warn('[useMessages] 유효하지 않은 메시지 배열:', newMessages);
       return;
     }
 
-    // 기존 메시지 클리어하지 않고 새 메시지들만 정규화해서 설정
     const normalizedMessages = newMessages.map(msg => {
       const formattedMessage = {
         ...normalizeMessage(msg, currentUserId),
@@ -73,7 +75,6 @@ export function useMessages() {
       return formattedMessage;
     });
 
-    // 중복 제거하고 시간순 정렬
     const uniqueMessages = [];
     const seenIds = new Set();
 
@@ -84,7 +85,6 @@ export function useMessages() {
       }
     });
 
-    // 시간순 정렬
     uniqueMessages.sort((a, b) => {
       const timeA = new Date(a.timestamp).getTime();
       const timeB = new Date(b.timestamp).getTime();
@@ -93,7 +93,7 @@ export function useMessages() {
 
     messages.value = uniqueMessages;
 
-    console.log('[useMessages] 최종 메시지 수:', messages.value.length);
+    logger.info('[useMessages] 최종 메시지 수:', messages.value.length);
   };
 
   const getMessageCount = () => messages.value.length;
@@ -118,7 +118,7 @@ export function useMessages() {
     const index = messages.value.findIndex(msg => msg.id === tempId);
     if (index !== -1) {
       messages.value.splice(index, 1);
-      console.log('[useMessages] 임시 메시지 제거:', tempId);
+      logger.info('[useMessages] 임시 메시지 제거:', tempId);
       return true;
     }
     return false;
@@ -128,7 +128,7 @@ export function useMessages() {
     const index = messages.value.findIndex(msg => msg.id === messageId);
     if (index !== -1) {
       messages.value[index] = { ...messages.value[index], ...updates };
-      console.log('[useMessages] 메시지 업데이트:', messageId);
+      logger.info('[useMessages] 메시지 업데이트:', messageId);
       return true;
     }
     return false;

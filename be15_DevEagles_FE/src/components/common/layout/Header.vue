@@ -14,7 +14,7 @@
         <div class="relative">
           <input
             type="text"
-            placeholder="검색 넣으면 여기다"
+            placeholder="검색"
             class="bg-[var(--color-primary-400)] text-white placeholder-[var(--color-gray-300)] rounded-md px-3 py-1.5 pl-9 font-small outline-none focus:ring-1 focus:ring-white w-48"
           />
           <svg
@@ -34,7 +34,7 @@
         </div>
 
         <!-- 프로필 -->
-        <div class="relative group">
+        <div class="relative group mr-4">
           <button
             class="flex items-center space-x-2 text-white hover:opacity-80 transition-opacity"
           >
@@ -59,23 +59,113 @@
 
           <!-- 드롭다운 메뉴 -->
           <div
-            class="absolute right-0 top-full mt-2 bg-white rounded-md shadow-drop overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 w-48 z-[9999]"
+            class="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-[var(--color-gray-200)] overflow-hidden invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-300 ease-out transform scale-95 group-hover:scale-100 w-52 z-[9999] backdrop-blur-sm"
           >
+            <!-- 사용자 정보 헤더 -->
+            <div
+              class="px-4 py-3 bg-gradient-to-r from-[var(--color-primary-50)] to-[var(--color-primary-100)] border-b border-[var(--color-gray-200)]"
+            >
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                  <img
+                    v-if="user.userThumbnail"
+                    :src="user.userThumbnail"
+                    :alt="user.name"
+                    class="w-full h-full object-cover"
+                  />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center bg-[var(--color-primary-300)] text-white font-one-liner-semibold text-sm"
+                  >
+                    {{ user.name ? user.name.charAt(0) : '?' }}
+                  </div>
+                </div>
+                <div class="flex-grow min-w-0">
+                  <p class="font-one-liner-semibold text-[var(--color-gray-800)] truncate">
+                    {{ user.name }}
+                  </p>
+                  <p class="text-xs text-[var(--color-gray-500)]">온라인</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 메뉴 아이템들 -->
             <div class="py-2">
               <a
                 href="#"
-                class="block px-4 py-2 text-[var(--color-gray-700)] hover:bg-[var(--color-gray-100)] font-one-liner"
+                class="flex items-center px-4 py-3 text-[var(--color-gray-700)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-600)] font-one-liner transition-all duration-200 group/item"
                 @click.prevent="handleMyPage"
-                >나의 정보</a
               >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-3 text-[var(--color-gray-500)] group-hover/item:text-[var(--color-primary-500)] transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                나의 정보
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </a>
 
-              <div class="border-t border-[var(--color-gray-200)] my-1"></div>
+              <div
+                class="mx-4 my-2 h-px bg-gradient-to-r from-transparent via-[var(--color-gray-200)] to-transparent"
+              ></div>
+
               <a
                 href="#"
-                class="block px-4 py-2 text-[var(--color-error-300)] hover:bg-[var(--color-gray-100)] font-one-liner"
+                class="flex items-center px-4 py-3 text-[var(--color-error-400)] hover:bg-[var(--color-error-50)] hover:text-[var(--color-error-500)] font-one-liner transition-all duration-200 group/item"
                 @click.prevent="handleLogout"
-                >로그아웃</a
               >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 mr-3 text-[var(--color-error-400)] group-hover/item:text-[var(--color-error-500)] transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+                로그아웃
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4 ml-auto opacity-0 group-hover/item:opacity-100 transition-opacity"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </a>
             </div>
           </div>
         </div>
