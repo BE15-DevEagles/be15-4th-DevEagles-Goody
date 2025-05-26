@@ -3,6 +3,8 @@ package com.deveagles.be15_deveagles_be.features.team.command.application.servic
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatRoomRepository;
 import com.deveagles.be15_deveagles_be.features.team.command.application.service.impl.TeamMemberCommandServiceImpl;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.aggregate.Team;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.aggregate.TeamMember;
@@ -32,8 +34,15 @@ class InviteTeamMemberTest {
     teamRepository = mock(TeamRepository.class);
     userRepository = mock(UserRepository.class);
     teamMemberRepository = mock(TeamMemberRepository.class);
+    ChatRoomService chatRoomService = mock(ChatRoomService.class);
+    ChatRoomRepository chatRoomRepository = mock(ChatRoomRepository.class);
     teamMemberCommandServiceImpl =
-        new TeamMemberCommandServiceImpl(teamRepository, userRepository, teamMemberRepository);
+        new TeamMemberCommandServiceImpl(
+            teamRepository,
+            userRepository,
+            teamMemberRepository,
+            chatRoomService,
+            chatRoomRepository);
   }
 
   @Test

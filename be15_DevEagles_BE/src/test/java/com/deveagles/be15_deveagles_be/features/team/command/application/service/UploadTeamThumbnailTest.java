@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.team.command.application.service.impl.TeamCommandServiceImpl;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.aggregate.Team;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.exception.TeamBusinessException;
@@ -38,10 +39,12 @@ class UploadTeamThumbnailTest {
     teamRepository = mock(TeamRepository.class);
     userRepository = mock(UserRepository.class);
     teamMemberRepository = mock(TeamMemberRepository.class);
+    ChatRoomService chatRoomService = mock(ChatRoomService.class);
     amazonS3 = mock(AmazonS3.class);
 
     teamCommandService =
-        new TeamCommandServiceImpl(teamRepository, userRepository, teamMemberRepository, amazonS3);
+        new TeamCommandServiceImpl(
+            teamRepository, userRepository, teamMemberRepository, chatRoomService, amazonS3);
 
     // @Value 필드 리플렉션으로 주입
     Field bucketField = TeamCommandServiceImpl.class.getDeclaredField("bucket");
