@@ -2,8 +2,10 @@ package com.deveagles.be15_deveagles_be.features.worklog.command.application.ser
 
 import com.deveagles.be15_deveagles_be.common.dto.PagedResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.SearchWorklogRequest;
+import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.SpellCheckRequest;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.WorkSummaryRequest;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.WorklogCreateRequest;
+import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.SpellCheckResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.SummaryResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogDetailResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogResponse;
@@ -20,4 +22,6 @@ public interface WorklogService {
   PagedResponse<WorklogResponse> findTeamWorklogs(Long userId, SearchWorklogRequest request);
 
   WorklogDetailResponse getWorklogById(Long worklogId, Long userId);
+
+  SpellCheckResponse checkSpelling(SpellCheckRequest request);
 }

@@ -155,3 +155,8 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: 1800000
   refresh-expiration: 604800000
+
+
+# 맞춤법 검사
+spellcheck:
+  url: http://localhost:5001/spellcheck

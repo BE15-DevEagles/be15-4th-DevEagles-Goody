@@ -13,12 +13,10 @@ import com.deveagles.be15_deveagles_be.features.user.command.application.service
 import com.deveagles.be15_deveagles_be.features.user.command.domain.exception.UserBusinessException;
 import com.deveagles.be15_deveagles_be.features.user.command.domain.exception.UserErrorCode;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.SearchWorklogRequest;
+import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.SpellCheckRequest;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.WorkSummaryRequest;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.request.WorklogCreateRequest;
-import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.GeminiApiResponseDto;
-import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.SummaryResponse;
-import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogDetailResponse;
-import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogResponse;
+import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.*;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.GeneratorBuilder;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.PageRequestUtil;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.WorklogService;
@@ -54,6 +52,9 @@ public class WorklogServiceImpl implements WorklogService {
 
   @Value("${gemini.api.url}")
   private String apiUrl;
+
+  @Value("${spellcheck.url}")
+  private String spellUrl;
 
   public WorklogServiceImpl(
       RestTemplate restTemplate,
@@ -283,5 +284,18 @@ public class WorklogServiceImpl implements WorklogService {
     if (detail == null || detail.getTeamId() == null || detail.getUserId() == null) {
       throw new TeamBusinessException(TeamErrorCode.NOT_TEAM_MEMBER);
     }
+  }
+
+  @Transactional
+  @Override
+  public SpellCheckResponse checkSpelling(SpellCheckRequest request) {
+    String url = spellUrl;
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+
+    HttpEntity<SpellCheckRequest> entity = new HttpEntity<>(request, headers);
+    ResponseEntity<SpellCheckResponse> response =
+        restTemplate.exchange(url, HttpMethod.POST, entity, SpellCheckResponse.class);
+    return response.getBody();
   }
 }
