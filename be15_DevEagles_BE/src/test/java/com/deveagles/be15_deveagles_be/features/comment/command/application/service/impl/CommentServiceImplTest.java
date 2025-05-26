@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
@@ -57,13 +58,7 @@ class CommentServiceImplTest {
     teamId = 20L;
 
     sampleComment =
-        Comment.builder()
-            .userId(userId)
-            .worklogId(worklogId)
-            .commentContent("기존 댓글")
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build();
+        Comment.builder().userId(userId).worklogId(worklogId).commentContent("기존 댓글").build();
 
     createRequest = new CommentCreateRequest(worklogId, "새 댓글");
     updateRequest = new CommentUpdateRequest("수정된 댓글");
@@ -88,10 +83,39 @@ class CommentServiceImplTest {
     when(worklogService.getWorklogById(worklogId, userId)).thenReturn(worklogDetail);
     when(userCommandService.getUserDetails(userId)).thenReturn(userDetail);
 
+    // save()에서 넘겨받은 객체에 ID 주입해주는 방식
+    when(commentRepository.save(any(Comment.class)))
+        .thenAnswer(
+            invocation -> {
+              Comment c = invocation.getArgument(0);
+              ReflectionTestUtils.setField(c, "commentId", 1L);
+              ReflectionTestUtils.setField(c, "createdAt", LocalDateTime.of(2024, 5, 26, 10, 0));
+              return c;
+            });
+
+    // findById도 동일하게 대응
+    when(commentRepository.findById(1L))
+        .thenAnswer(
+            invocation -> {
+              Comment comment =
+                  Comment.builder()
+                      .worklogId(createRequest.getWorklogId())
+                      .commentContent(createRequest.getCommentContent())
+                      .userId(userId)
+                      .build();
+              ReflectionTestUtils.setField(comment, "commentId", 1L);
+              ReflectionTestUtils.setField(
+                  comment, "createdAt", LocalDateTime.of(2024, 5, 26, 10, 0));
+              return Optional.of(comment);
+            });
+
+    // when
     CommentResponse response = commentService.registerComment(userId, createRequest);
 
+    // then
     assertEquals("홍길동", response.getUsername());
     assertEquals("새 댓글", response.getCommentContent());
+    assertNotNull(response.getTime());
     verify(commentRepository).save(any(Comment.class));
   }
 
@@ -175,12 +199,7 @@ class CommentServiceImplTest {
   @DisplayName("댓글 수정 실패 - 본인이 아님")
   void updateComment_NotOwner_ThrowsException() {
     Comment someoneElsesComment =
-        Comment.builder()
-            .userId(otherUserId)
-            .commentContent("다른 사람 댓글")
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build();
+        Comment.builder().userId(otherUserId).commentContent("다른 사람 댓글").build();
     when(userCommandService.getUserDetails(userId)).thenReturn(userDetail);
     when(commentRepository.findById(any())).thenReturn(Optional.of(someoneElsesComment));
 
@@ -198,12 +217,7 @@ class CommentServiceImplTest {
   @DisplayName("댓글 삭제 실패 - 본인이 아님")
   void removeComment_NotOwner_ThrowsException() {
     Comment someoneElsesComment =
-        Comment.builder()
-            .userId(otherUserId)
-            .commentContent("삭제할 댓글")
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
-            .build();
+        Comment.builder().userId(otherUserId).commentContent("삭제할 댓글").build();
     when(userCommandService.getUserDetails(userId)).thenReturn(userDetail);
     when(commentRepository.findById(any())).thenReturn(Optional.of(someoneElsesComment));
 
