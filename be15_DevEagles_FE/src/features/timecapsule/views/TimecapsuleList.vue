@@ -81,6 +81,7 @@
 
 <script setup>
   import { ref, onMounted, computed } from 'vue';
+  import { useToast } from 'vue-toastification';
   import {
     fetchInactiveTimecapsules,
     deleteTimecapsule,
@@ -91,6 +92,7 @@
 
   const teamStore = useTeamStore();
   const teamId = computed(() => teamStore.currentTeamId);
+  const toast = useToast();
 
   const capsules = ref([]);
   const loading = ref(true);
@@ -142,7 +144,7 @@
       showDetailModal.value = false;
       showConfirmDelete.value = false;
     } catch (e) {
-      alert('삭제에 실패했습니다.');
+      toast.error('삭제에 실패했습니다.');
     }
   }
 

@@ -147,6 +147,7 @@
 
 <script setup>
   import { defineProps, defineEmits, watch, computed } from 'vue';
+  import { useToast } from 'vue-toastification';
   import { useAuthStore } from '@/store/auth';
   import { useUserStatusStore } from '@/store/userStatus';
   import { useTeamStore } from '@/store/team';
@@ -156,6 +157,7 @@
   const userStatusStore = useUserStatusStore();
   const teamStore = useTeamStore();
   const { currentTeamId } = storeToRefs(teamStore);
+  const toast = useToast();
 
   /**
    * Props:
@@ -253,7 +255,7 @@
 
   // 업무일지 보기 핸들러
   const handleViewWorklog = member => {
-    alert('업무일지 기능은 아직 구현되지 않았습니다.');
+    toast.info('업무일지 기능은 아직 구현되지 않았습니다.');
   };
 
   // 채팅 시작 핸들러
