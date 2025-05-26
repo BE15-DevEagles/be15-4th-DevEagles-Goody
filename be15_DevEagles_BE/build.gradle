@@ -33,7 +33,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.mongodb/mongodb-driver-sync
     //Querydsl - 보안 취약점 패치된 버전으로 업데이트
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
-    implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
     implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.4'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'

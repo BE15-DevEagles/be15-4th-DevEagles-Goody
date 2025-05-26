@@ -1,32 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-    <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>logstash.logging.svc.cluster.local:5000</destination>
-        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
-            <providers>
-                <timestamp>
-                    <timeZone>UTC</timeZone>
-                </timestamp>
-                <pattern>
-                    <pattern>
-                        {
-                        "timestamp": "%date",
-                        "level": "%level",
-                        "logger": "%logger",
-                        "thread": "%thread",
-                        "message": "%message",
-                        "context": "%mdc"
-                        }
-                    </pattern>
-                </pattern>
-            </providers>
-        </encoder>
-    </appender>
+    <!-- 공통 로그 설정 -->
+    <logger name="com.deveagles.be15_deveagles_be" level="DEBUG" />
 
-    <logger name="com.deveagles.be15_deveagles_be" level="DEBUG"/>
-    <root level="INFO">
-        <appender-ref ref="LOGSTASH"/>
-    </root>
+    <!-- local이 아닌 환경에서만 Logstash 사용 -->
+    <springProfile name="!local">
+        <appender name="LOGSTASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>logstash.logging.svc.cluster.local:5000</destination>
+            <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+                <providers>
+                    <timestamp>
+                        <timeZone>Asia/Seoul</timeZone>
+                    </timestamp>
+                    <pattern>
+                        <pattern>
+                            {
+                            "timestamp": "%date",
+                            "level": "%level",
+                            "logger": "%logger",
+                            "thread": "%thread",
+                            "message": "%message",
+                            "context": "%mdc"
+                            }
+                        </pattern>
+                    </pattern>
+                </providers>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="LOGSTASH" />
+        </root>
+    </springProfile>
+
+    <!-- 로컬에서는 console 로깅만 (원하면 생략 가능) -->
+    <springProfile name="local">
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE" />
+        </root>
+    </springProfile>
 
 </configuration>
