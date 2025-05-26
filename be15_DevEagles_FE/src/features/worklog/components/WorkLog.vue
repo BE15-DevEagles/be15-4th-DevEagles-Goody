@@ -1,6 +1,8 @@
 <template>
   <tr class="cursor-pointer hover:bg-gray-50" @click="$emit('click', log)">
-    <td class="text-dark font-one-liner-semibold" style="width: 20%">{{ log.userName }}</td>
+    <td class="text-center text-dark font-one-liner-semibold" style="width: 20%">
+      {{ log.userName }}
+    </td>
     <td class="text-gray" style="width: 60%">{{ log.summary }}</td>
     <td class="text-gray" style="width: 20%">{{ formattedDate }}</td>
   </tr>
