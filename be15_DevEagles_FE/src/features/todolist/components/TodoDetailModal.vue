@@ -42,10 +42,6 @@
         dueDate: new Date(dueDateRaw.value),
       });
 
-      toast.success('수정되었습니다.', {
-        toastClassName: 'Vue-Toastification__toast--info',
-      });
-
       emit('edit', todo.value.todoId);
       showConfirmEdit.value = false;
       visible.value = false;
@@ -59,10 +55,6 @@
   const handleDeleteConfirm = async () => {
     try {
       await deleteTodo(todo.value.todoId);
-
-      toast.success('삭제되었습니다.', {
-        toastClassName: 'Vue-Toastification__toast--info',
-      });
 
       emit('delete', todo.value.todoId);
       showConfirmDelete.value = false;

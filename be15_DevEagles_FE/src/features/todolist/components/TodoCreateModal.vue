@@ -144,7 +144,6 @@
 
     try {
       await createTodos(payload);
-      toast.success('할 일이 등록되었습니다.');
       emit('submitted');
       visible.value = false;
       confirmVisible.value = false;

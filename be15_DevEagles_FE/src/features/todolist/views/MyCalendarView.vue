@@ -50,7 +50,6 @@
   const handleComplete = async todoId => {
     try {
       await completeTodo(todoId);
-      toast.success('할 일이 완료되었습니다.');
       location.reload();
     } catch (err) {
       toast.error('완료 처리에 실패했습니다.');
@@ -134,6 +133,7 @@
                 ><input
                   type="checkbox"
                   :checked="false"
+                  @click.stop
                   @change.stop="handleComplete(todo.todoId)"
                 />
               </span>
@@ -155,7 +155,7 @@
               type="info"
               size="sm"
               html-type="button"
-              @click="router.push('/worklog/create')"
+              @click="router.push('/worklog/my')"
             >
               업무일지 작성하러 가기
             </BaseButton>
@@ -228,6 +228,10 @@
     justify-content: center;
     gap: 1rem;
     padding: 1rem;
+  }
+
+  input[type='checkbox'] {
+    accent-color: var(--color-primary-main);
   }
 
   .calendar-section,
