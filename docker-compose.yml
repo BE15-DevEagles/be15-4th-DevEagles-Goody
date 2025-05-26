@@ -1,6 +1,7 @@
 services:
   backend:
     build: ./be15_DevEagles_BE
+    image: gyeongmin03/k8s-boot-ing:latest
     container_name: backend
     ports:
       - "8080:8080"
@@ -10,6 +11,7 @@ services:
 
   frontend:
     build: ./be15_DevEagles_FE
+    image: gyeongmin03/k8s-vue-ing:latest
     container_name: frontend
     ports:
       - "5173:5173"
