@@ -86,6 +86,11 @@
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay',
       },
+      titleFormat: dateInfo => {
+        const year = dateInfo.date.year;
+        const month = String(dateInfo.date.month + 1).padStart(2, '0');
+        return `${year}년 ${month}월`;
+      },
       eventDidMount: async info => {
         const todoId = Number(info.event.id);
         const fetchFn = props.type === 'team' ? fetchTeamTodoDetail : fetchTodoDetail;
