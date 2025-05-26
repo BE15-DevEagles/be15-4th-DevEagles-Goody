@@ -9,6 +9,7 @@ WORKDIR /app
 COPY . .
 
 # Gradle을 사용하여 프로젝트를 빌드한다. (daemon 프로세스는 사용하지 않는다.)
+RUN gradle spotlessApply
 RUN gradle clean build --no-daemon
 
 ## 2. 실행 스테이지 시작
