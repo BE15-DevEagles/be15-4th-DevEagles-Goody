@@ -107,7 +107,47 @@ export const useChatStore = defineStore('chat', {
 
         if (teamChatRooms && Array.isArray(teamChatRooms)) {
           const teamMembers = teamStore.teamMembers || [];
-          const transformedTeamChats = teamChatRooms.map(room =>
+          const currentTeamId = teamStore.currentTeamId;
+
+          // 현재 팀에 속한 채팅방만 필터링
+          const filteredTeamChats = teamChatRooms.filter(room => {
+            // AI 채팅방은 항상 포함
+            if (room.type === 'AI') {
+              return true;
+            }
+
+            // 팀 채팅방과 그룹 채팅방은 teamId가 현재 팀과 일치하는 경우만
+            if (room.type === 'TEAM' || room.type === 'GROUP') {
+              return room.teamId === currentTeamId;
+            }
+
+            // 1:1 채팅방의 경우 상대방이 현재 팀 멤버인지 확인
+            if (room.type === 'DIRECT') {
+              const otherParticipants =
+                room.participants?.filter(p => p.userId !== authStore.userId) || [];
+              if (otherParticipants.length === 0) return false;
+
+              const otherParticipant = otherParticipants[0];
+              const isTeamMember = teamMembers.some(
+                member => String(member.userId) === String(otherParticipant.userId)
+              );
+
+              if (!isTeamMember) {
+                logger.info('[loadChatRooms] 다른 팀 사용자와의 1:1 채팅방 제외:', {
+                  roomId: room.id,
+                  otherUserId: otherParticipant.userId,
+                  currentTeamId: currentTeamId,
+                  teamMemberIds: teamMembers.map(m => m.userId),
+                });
+              }
+
+              return isTeamMember;
+            }
+
+            return true;
+          });
+
+          const transformedTeamChats = filteredTeamChats.map(room =>
             transformChatRoom(room, authStore.userId, teamMembers, teamStore.currentTeam)
           );
           const transformedAiChats = (aiChatRooms || []).map(room =>
@@ -116,7 +156,8 @@ export const useChatStore = defineStore('chat', {
           this.chats = [...transformedAiChats, ...transformedTeamChats];
           logger.info('[loadChatRooms] 채팅방 로드 완료:', {
             teamId: teamStore.currentTeamId,
-            teamChatCount: transformedTeamChats.length,
+            originalTeamChatCount: teamChatRooms.length,
+            filteredTeamChatCount: transformedTeamChats.length,
             aiChatCount: transformedAiChats.length,
             totalChatCount: this.chats.length,
             teamMemberCount: teamMembers.length,
