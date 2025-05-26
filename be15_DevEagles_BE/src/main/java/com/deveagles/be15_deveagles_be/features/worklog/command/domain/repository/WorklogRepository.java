@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface WorklogRepository extends JpaRepository<Worklog, Long> {
-  boolean existsByTeamIdAndWrittenAt(Long teamId, LocalDateTime writtenAt);
+  boolean existsByUserIdAndWrittenAt(Long userId, LocalDateTime writtenAt);
 
   Page<Worklog> findByUserIdAndTeamId(Long userId, Long teamId, Pageable pageable);
 
