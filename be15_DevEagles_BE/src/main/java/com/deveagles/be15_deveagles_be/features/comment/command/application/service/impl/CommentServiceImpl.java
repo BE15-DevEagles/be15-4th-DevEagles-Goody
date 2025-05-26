@@ -48,17 +48,18 @@ public class CommentServiceImpl implements CommentService {
         Comment.builder()
             .worklogId(request.getWorklogId())
             .commentContent(request.getCommentContent())
-            .createdAt(LocalDateTime.now())
-            .updatedAt(LocalDateTime.now())
             .userId(userId)
             .build();
 
     commentRepository.save(comment);
-
+    Comment saved =
+        commentRepository
+            .findById(comment.getCommentId())
+            .orElseThrow(() -> new IllegalStateException("댓글 저장 실패"));
     return CommentResponse.builder()
-        .commentId(comment.getCommentId())
-        .commentContent(comment.getCommentContent())
-        .time(comment.getCreatedAt())
+        .commentId(saved.getCommentId())
+        .commentContent(saved.getCommentContent())
+        .time(saved.getCreatedAt())
         .username(userName)
         .isEdited(false)
         .build();

@@ -91,7 +91,7 @@
       </template>
     </div>
     <template #footer>
-      <BaseButton type="primary" @click="showFindIdResModal = false">확인</BaseButton>
+      <BaseButton type="primary" @click="showFindPwdResModal = false">확인</BaseButton>
     </template>
   </BaseModal>
 </template>
@@ -157,7 +157,6 @@
   const onFindPwdSubmit = async ({ userName, email }) => {
     try {
       await findUserPwd({ userName, email });
-      showFindPwdModal.value = false;
       isFoundPwd.value = true;
     } catch (e) {
       console.error(e);
