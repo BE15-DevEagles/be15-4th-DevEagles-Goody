@@ -1,10 +1,8 @@
-import MyCalendarView from '@/features/todolist/views/MyCalendarView.vue';
-
 export const calendarRoutes = [
   {
     path: '/calendar/my',
     name: 'MyCalendar',
-    component: () => MyCalendarView,
+    component: () => import('@/features/todolist/views/MyCalendarView.vue'),
     meta: {
       layout: 'default',
       requiresAuth: true,

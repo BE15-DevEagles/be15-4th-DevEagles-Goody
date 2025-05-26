@@ -1,6 +1,6 @@
 <!-- file: TodoCalendar.vue -->
 <script setup>
-  import { inject, onMounted, ref, watch } from 'vue';
+  import { onMounted, ref, watch } from 'vue';
   import { Calendar } from '@fullcalendar/core';
   import dayGridPlugin from '@fullcalendar/daygrid';
   import timeGridPlugin from '@fullcalendar/timegrid';
@@ -9,8 +9,6 @@
   import 'tippy.js/dist/tippy.css';
 
   import { fetchTodoDetail, fetchTeamTodoDetail } from '@/features/todolist/api/api.js';
-
-  const currentUserId = inject('currentUserId');
 
   // 유저별 색상 맵
   const userColorMap = {};

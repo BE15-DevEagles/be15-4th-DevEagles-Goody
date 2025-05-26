@@ -64,7 +64,6 @@
 
     try {
       await completeTodo(todoId);
-      toast.success('할 일이 완료되었습니다.');
       location.reload();
     } catch (err) {
       toast.error('완료 처리에 실패했습니다.');
@@ -154,6 +153,7 @@
                 ><input
                   type="checkbox"
                   :checked="false"
+                  @click.stop
                   @change.stop="handleComplete(todo.todoId)"
                 />
               </span>
@@ -168,16 +168,18 @@
               @update:current-page="page => (currentPage = page)"
             />
           </div>
-          <div
-            v-if="worklogWritten === false"
-            class="write-worklog-wrapper"
-            :class="{ stacked: props.isSidebarCollapsed }"
-          >
-            <BaseButton type="info" size="sm" @click="router.push('/worklog/create')">
+          <!-- 업무일지 작성하러 가기 버튼만 조건부 렌더링 -->
+          <div class="write-worklog-wrapper" :class="{ stacked: props.isSidebarCollapsed }">
+            <BaseButton
+              v-if="worklogWritten === false"
+              type="info"
+              size="sm"
+              @click="router.push('/worklog/my')"
+            >
               업무일지 작성하러 가기
             </BaseButton>
 
-            <!-- 사이드바 열려있으면 오른쪽 끝에 -->
+            <!-- 항상 표시됨 -->
             <BaseButton
               v-if="!props.isSidebarCollapsed"
               type="primary"
@@ -185,13 +187,6 @@
               class="ml-auto"
               @click="isCreateModalOpen = true"
             >
-              Todo 추가
-            </BaseButton>
-          </div>
-
-          <!-- 사이드바 닫혀있을 때는 아래쪽에 추가 버튼 따로 표시 -->
-          <div v-if="props.isSidebarCollapsed" class="todo-add-button-wrapper">
-            <BaseButton type="primary" size="sm" @click="isCreateModalOpen = true">
               Todo 추가
             </BaseButton>
           </div>
@@ -219,6 +214,9 @@
     margin-top: 1rem;
   }
 
+  input[type='checkbox'] {
+    accent-color: var(--color-primary-main);
+  }
   .todolist-section.expanded {
     flex: 1;
     min-width: 220px;
