@@ -1,5 +1,8 @@
 package com.deveagles.be15_deveagles_be.features.team.command.application.service.impl;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.aggregate.ChatRoom;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatRoomRepository;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.request.TransferLeaderRequest;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.request.WithdrawTeamRequest;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.response.TeamMemberResponse;
@@ -15,9 +18,11 @@ import com.deveagles.be15_deveagles_be.features.user.command.domain.aggregate.Us
 import com.deveagles.be15_deveagles_be.features.user.command.repository.UserRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TeamMemberCommandServiceImpl implements TeamMemberCommandService {
@@ -25,6 +30,8 @@ public class TeamMemberCommandServiceImpl implements TeamMemberCommandService {
   private final TeamRepository teamRepository;
   private final UserRepository userRepository;
   private final TeamMemberRepository teamMemberRepository;
+  private final ChatRoomService chatRoomService;
+  private final ChatRoomRepository chatRoomRepository;
 
   @Override
   @Transactional
@@ -60,6 +67,31 @@ public class TeamMemberCommandServiceImpl implements TeamMemberCommandService {
             .build();
 
     teamMemberRepository.save(newMember);
+
+    // 6. 팀 기본 채팅방에 참가자 추가
+    try {
+      log.info("팀 기본 채팅방에 참가자 추가 시작 - 팀ID: {}, 사용자ID: {}", teamId, invitee.getUserId());
+
+      Optional<ChatRoom> defaultChatRoom =
+          chatRoomRepository.findDefaultChatRoomByTeamId(String.valueOf(teamId));
+      if (defaultChatRoom.isPresent()) {
+        log.info("기본 채팅방 발견 - 채팅방ID: {}", defaultChatRoom.get().getId());
+
+        chatRoomService.addParticipantToChatRoom(
+            defaultChatRoom.get().getId(), String.valueOf(invitee.getUserId()));
+
+        log.info("팀 기본 채팅방에 참가자 추가 완료");
+      } else {
+        log.warn("팀 기본 채팅방을 찾을 수 없음 - 팀ID: {}", teamId);
+      }
+    } catch (Exception e) {
+      log.error(
+          "팀 기본 채팅방 참가자 추가 실패 - 팀ID: {}, 사용자ID: {}, 에러: {}",
+          teamId,
+          invitee.getUserId(),
+          e.getMessage(),
+          e);
+    }
   }
 
   @Override
@@ -100,6 +132,31 @@ public class TeamMemberCommandServiceImpl implements TeamMemberCommandService {
 
     // 6. soft delete 처리
     teamMember.softDelete();
+
+    // 7. 팀 기본 채팅방에서 참가자 제거
+    try {
+      log.info("팀 기본 채팅방에서 참가자 제거 시작 - 팀ID: {}, 사용자ID: {}", teamId, target.getUserId());
+
+      Optional<ChatRoom> defaultChatRoom =
+          chatRoomRepository.findDefaultChatRoomByTeamId(String.valueOf(teamId));
+      if (defaultChatRoom.isPresent()) {
+        log.info("기본 채팅방 발견 - 채팅방ID: {}", defaultChatRoom.get().getId());
+
+        chatRoomService.removeParticipantFromChatRoom(
+            defaultChatRoom.get().getId(), String.valueOf(target.getUserId()));
+
+        log.info("팀 기본 채팅방에서 참가자 제거 완료");
+      } else {
+        log.warn("팀 기본 채팅방을 찾을 수 없음 - 팀ID: {}", teamId);
+      }
+    } catch (Exception e) {
+      log.error(
+          "팀 기본 채팅방 참가자 제거 실패 - 팀ID: {}, 사용자ID: {}, 에러: {}",
+          teamId,
+          target.getUserId(),
+          e.getMessage(),
+          e);
+    }
   }
 
   @Override
@@ -125,6 +182,31 @@ public class TeamMemberCommandServiceImpl implements TeamMemberCommandService {
             .orElseThrow(() -> new TeamBusinessException(TeamErrorCode.NOT_TEAM_MEMBER));
 
     teamMember.softDelete();
+
+    // 4. 팀 기본 채팅방에서 참가자 제거
+    try {
+      log.info("팀 탈퇴 시 기본 채팅방에서 참가자 제거 시작 - 팀ID: {}, 사용자ID: {}", teamId, userId);
+
+      Optional<ChatRoom> defaultChatRoom =
+          chatRoomRepository.findDefaultChatRoomByTeamId(String.valueOf(teamId));
+      if (defaultChatRoom.isPresent()) {
+        log.info("기본 채팅방 발견 - 채팅방ID: {}", defaultChatRoom.get().getId());
+
+        chatRoomService.removeParticipantFromChatRoom(
+            defaultChatRoom.get().getId(), String.valueOf(userId));
+
+        log.info("팀 탈퇴 시 기본 채팅방에서 참가자 제거 완료");
+      } else {
+        log.warn("팀 기본 채팅방을 찾을 수 없음 - 팀ID: {}", teamId);
+      }
+    } catch (Exception e) {
+      log.error(
+          "팀 탈퇴 시 기본 채팅방 참가자 제거 실패 - 팀ID: {}, 사용자ID: {}, 에러: {}",
+          teamId,
+          userId,
+          e.getMessage(),
+          e);
+    }
   }
 
   @Override

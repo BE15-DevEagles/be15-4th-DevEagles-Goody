@@ -23,14 +23,23 @@ export const useTeamStore = defineStore('team', {
         const response = await api.get('teams/my');
         this.teams = response.data.data;
 
+        // 팀이 없는 경우 초기화
+        if (this.teams.length === 0) {
+          this.currentTeam = null;
+          this.teamMembers = [];
+          localStorage.removeItem('lastSelectedTeam');
+          console.log('소속된 팀이 없습니다.');
+          return;
+        }
+
         const lastSelectedTeam = localStorage.getItem('lastSelectedTeam');
         const teamToSelect =
           lastSelectedTeam && this.teams.find(team => team.teamId === Number(lastSelectedTeam))
             ? Number(lastSelectedTeam)
             : this.teams[0]?.teamId;
 
-        if (this.teams.length > 0 && teamToSelect) {
-          await this.setCurrentTeam(teamToSelect); // ✅ 항상 set 호출
+        if (teamToSelect) {
+          await this.setCurrentTeam(teamToSelect);
         }
       } catch (err) {
         this.error = err.message;
@@ -42,6 +51,14 @@ export const useTeamStore = defineStore('team', {
 
     // 현재 팀 설정
     async setCurrentTeam(teamId) {
+      // teamId가 유효하지 않은 경우 처리
+      if (!teamId || teamId === 'undefined' || teamId === 'null') {
+        console.warn('유효하지 않은 teamId:', teamId);
+        this.currentTeam = null;
+        this.teamMembers = [];
+        return;
+      }
+
       this.loading = true;
       try {
         // 팀 상세 정보 조회
@@ -68,6 +85,9 @@ export const useTeamStore = defineStore('team', {
       } catch (err) {
         this.error = err.message;
         console.error('팀 설정 실패:', err);
+        // 에러 발생 시 상태 초기화
+        this.currentTeam = null;
+        this.teamMembers = [];
       } finally {
         this.loading = false;
       }

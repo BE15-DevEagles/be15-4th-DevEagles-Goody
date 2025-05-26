@@ -48,14 +48,14 @@
                 />
                 <div
                   v-else
-                  class="w-full h-full bg-[var(--color-primary-300)] flex items-center justify-center text-white font-one-liner-semibold"
+                  class="w-full h-full flex items-center justify-center text-white font-one-liner-semibold"
                   :class="getChatTypeClass(chat.type)"
                 >
                   {{ getChatDisplayChar(chat) }}
                 </div>
               </div>
 
-              <!-- 온라인 상태 표시 -->
+              <!-- 온라인 상태 표시 (1:1 채팅만) -->
               <div
                 v-if="chat.type === 'DIRECT' && chat.isOnline !== undefined"
                 class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white"
@@ -65,9 +65,25 @@
               <!-- AI 채팅 표시 -->
               <div
                 v-else-if="chat.type === 'AI'"
-                class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white bg-[var(--color-primary-400)]"
+                class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white bg-[var(--color-primary-400)] flex items-center justify-center"
               >
-                <span class="text-white text-xs leading-none">🤖</span>
+                <span class="text-white text-[8px] leading-none">🤖</span>
+              </div>
+
+              <!-- 팀 채팅방 표시 -->
+              <div
+                v-else-if="chat.type === 'TEAM'"
+                class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white bg-[var(--color-success-400)] flex items-center justify-center"
+              >
+                <span class="text-white text-[8px] leading-none">👥</span>
+              </div>
+
+              <!-- 그룹 채팅방 표시 -->
+              <div
+                v-else-if="chat.type === 'GROUP'"
+                class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white bg-[var(--color-info-400)] flex items-center justify-center"
+              >
+                <span class="text-white text-[8px] leading-none">👥</span>
               </div>
             </div>
 
@@ -75,9 +91,9 @@
               <div class="flex items-center justify-between">
                 <h3 class="font-one-liner-semibold truncate flex items-center">
                   {{ chat.name }}
-                  <!-- 채팅방 타입 표시 -->
+                  <!-- 채팅방 타입별 참가자 수 표시 -->
                   <span
-                    v-if="chat.type === 'GROUP'"
+                    v-if="chat.type === 'GROUP' || chat.type === 'TEAM'"
                     class="ml-1 text-xs text-[var(--color-gray-400)]"
                   >
                     ({{ chat.participants?.length || 0 }}명)
