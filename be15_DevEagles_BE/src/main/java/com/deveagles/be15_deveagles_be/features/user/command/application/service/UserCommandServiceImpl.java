@@ -91,11 +91,15 @@ public class UserCommandServiceImpl implements UserCommandService {
 
     user.modifyUserInfo(request.userName(), request.phoneNumber());
 
-    if (profile != null && !profile.isEmpty()) {
-      String profileUrl = saveProfile(profile);
-      user.setProfile(profileUrl);
-    } else {
-      user.setProfile(null);
+    if (profile != null) {
+      if (!profile.isEmpty()) {
+        // ✅ 새 이미지 업로드
+        String profileUrl = saveProfile(profile);
+        user.setProfile(profileUrl);
+      } else {
+        // ✅ 빈 파일이면 → 이미지 삭제 요청
+        user.setProfile(null);
+      }
     }
 
     return buildUserDetailResponse(userRepository.save(user));

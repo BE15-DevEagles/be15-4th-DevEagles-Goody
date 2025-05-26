@@ -75,12 +75,14 @@
     errors.password = '';
     errors.confirmPassword = '';
 
+    const passwordRegex = new RegExp(
+      '^(?=.*[A-Za-z])(?=.*\\d)(?=.*[!@#$%^&*()\\-_=+{}\\[\\]|;:\'",.<>?/]).{8,}$'
+    );
+
     if (!form.password) {
       errors.password = '비밀번호를 입력해주세요.';
       valid = false;
-    } else if (
-      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*()\-=+{}[\]|;:'",.<>?/]).{8,}$/.test(form.password)
-    ) {
+    } else if (!passwordRegex.test(form.password)) {
       errors.password = '비밀번호는 영문자, 숫자, 특수문자를 포함한 8자 이상이어야 합니다.';
       valid = false;
     }

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -90,6 +92,13 @@ public class UserCommandController {
       @AuthenticationPrincipal CustomUser customUser,
       @RequestPart @Valid UserUpdateRequest request,
       @RequestPart(required = false) MultipartFile profile) {
+
+    log.info("🔥 profile == null ? {}", (profile == null));
+    if (profile != null) {
+      log.info("🔥 profile.isEmpty() ? {}", profile.isEmpty());
+      log.info("🔥 profile original filename = {}", profile.getOriginalFilename());
+      log.info("🔥 profile content type = {}", profile.getContentType());
+    }
     UserDetailResponse response =
         userCommandService.updateUserDetails(customUser.getUserId(), request, profile);
 

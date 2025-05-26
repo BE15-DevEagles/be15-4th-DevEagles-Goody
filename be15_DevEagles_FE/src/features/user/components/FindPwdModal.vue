@@ -45,6 +45,9 @@
 
   const handleSubmit = () => {
     emit('submit', { userName: userName.value, email: email.value });
+    showModal.value = false;
+    userName.value = '';
+    email.value = '';
   };
 </script>
 
