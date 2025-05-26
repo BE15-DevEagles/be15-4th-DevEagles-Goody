@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.service.UserCommandServiceImpl;
@@ -39,8 +40,10 @@ class UserCommandServiceImplTest {
     modelMapper = mock(ModelMapper.class);
     passwordEncoder = mock(PasswordEncoder.class);
     profile = mock(MultipartFile.class);
+    ChatRoomService chatRoomService = mock(ChatRoomService.class);
     userCommandService =
-        new UserCommandServiceImpl(userRepository, modelMapper, passwordEncoder, amazonS3);
+        new UserCommandServiceImpl(
+            userRepository, modelMapper, passwordEncoder, amazonS3, chatRoomService);
 
     invalidUserId = -1L;
     validPassword = "eagles1234!";

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserCreateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.request.UserUpdateRequest;
 import com.deveagles.be15_deveagles_be.features.user.command.application.dto.response.UserDetailResponse;
@@ -43,9 +44,11 @@ class UserCommandServiceTest {
     passwordEncoder = mock(PasswordEncoder.class);
     amazonS3 = mock(AmazonS3.class);
     profile = mock(MultipartFile.class);
+    ChatRoomService chatRoomService = mock(ChatRoomService.class);
 
     userCommandService =
-        new UserCommandServiceImpl(userRepository, modelMapper, passwordEncoder, amazonS3);
+        new UserCommandServiceImpl(
+            userRepository, modelMapper, passwordEncoder, amazonS3, chatRoomService);
 
     createUser =
         UserCreateRequest.builder()

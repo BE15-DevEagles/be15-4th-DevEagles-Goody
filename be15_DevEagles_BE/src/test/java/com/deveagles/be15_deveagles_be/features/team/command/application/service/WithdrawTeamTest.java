@@ -3,6 +3,8 @@ package com.deveagles.be15_deveagles_be.features.team.command.application.servic
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.deveagles.be15_deveagles_be.features.chat.command.application.service.ChatRoomService;
+import com.deveagles.be15_deveagles_be.features.chat.command.domain.repository.ChatRoomRepository;
 import com.deveagles.be15_deveagles_be.features.team.command.application.dto.request.WithdrawTeamRequest;
 import com.deveagles.be15_deveagles_be.features.team.command.application.service.impl.TeamMemberCommandServiceImpl;
 import com.deveagles.be15_deveagles_be.features.team.command.domain.aggregate.Team;
@@ -29,13 +31,20 @@ class WithdrawTeamTest {
   private TeamMemberRepository teamMemberRepository;
   private UserRepository userRepository;
   private TeamMemberCommandServiceImpl teamMemberCommandServiceImpl;
+  ChatRoomService chatRoomService = mock(ChatRoomService.class);
+  ChatRoomRepository chatRoomRepository = mock(ChatRoomRepository.class);
 
   @BeforeEach
   void setUp() {
     teamRepository = mock(TeamRepository.class);
     teamMemberRepository = mock(TeamMemberRepository.class);
     teamMemberCommandServiceImpl =
-        new TeamMemberCommandServiceImpl(teamRepository, userRepository, teamMemberRepository);
+        new TeamMemberCommandServiceImpl(
+            teamRepository,
+            userRepository,
+            teamMemberRepository,
+            chatRoomService,
+            chatRoomRepository);
   }
 
   @Test
