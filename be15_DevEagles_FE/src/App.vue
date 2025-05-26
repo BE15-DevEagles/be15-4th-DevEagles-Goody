@@ -10,7 +10,7 @@
   </BaseModal>
 
   <!-- 타임캡슐 내용 모달 (여러 개 연속 표시) -->
-  <BaseModal v-model="showContentModal" title="타임캡슐">
+  <BaseModal v-model="showContentModal" title="타임캡슐" animation-class="back-in-left">
     <template #default>
       <div v-if="currentCapsule">
         <div class="mb-2">
