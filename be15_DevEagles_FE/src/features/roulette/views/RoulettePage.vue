@@ -133,6 +133,7 @@
   import { ref, computed, watch } from 'vue';
   import { useTeamStore } from '@/store/team';
   import BaseModal from '@/components/common/components/BaseModal.vue';
+  import { sendRouletteResultToChat } from '@/features/roulette/api/rouletteService';
 
   const teamStore = useTeamStore();
   const teamId = computed(() => teamStore.currentTeamId);
@@ -293,8 +294,16 @@
   }
 
   function sendToChat() {
-    if (result.value !== null) {
-      alert(`채팅방으로 "${currentOptions.value[result.value]}" 전송!`);
+    if (result.value !== null && teamId.value) {
+      const resultText = currentOptions.value[result.value];
+
+      sendRouletteResultToChat(teamId.value, resultText)
+        .then(() => {
+          console.log(`채팅방으로 "${resultText}" 전송 완료`);
+        })
+        .catch(error => {
+          console.error('채팅방 전송 실패:', error);
+        });
     }
   }
 

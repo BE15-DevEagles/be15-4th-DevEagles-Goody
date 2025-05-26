@@ -111,14 +111,33 @@ export const useChatStore = defineStore('chat', {
 
           // 현재 팀에 속한 채팅방만 필터링
           const filteredTeamChats = teamChatRooms.filter(room => {
+            logger.debug('[loadChatRooms] 채팅방 필터링 검사:', {
+              roomId: room.id,
+              roomName: room.name,
+              roomType: room.type,
+              roomTeamId: room.teamId,
+              roomTeamIdType: typeof room.teamId,
+              currentTeamId: currentTeamId,
+              currentTeamIdType: typeof currentTeamId,
+              isEqual: room.teamId === currentTeamId,
+              isStringEqual: String(room.teamId) === String(currentTeamId),
+            });
+
             // AI 채팅방은 항상 포함
             if (room.type === 'AI') {
+              logger.debug('[loadChatRooms] AI 채팅방 포함:', room.id);
               return true;
             }
 
             // 팀 채팅방과 그룹 채팅방은 teamId가 현재 팀과 일치하는 경우만
             if (room.type === 'TEAM' || room.type === 'GROUP') {
-              return room.teamId === currentTeamId;
+              const shouldInclude = String(room.teamId) === String(currentTeamId);
+              logger.debug('[loadChatRooms] 팀/그룹 채팅방 필터링:', {
+                roomId: room.id,
+                roomType: room.type,
+                shouldInclude: shouldInclude,
+              });
+              return shouldInclude;
             }
 
             // 1:1 채팅방의 경우 상대방이 현재 팀 멤버인지 확인

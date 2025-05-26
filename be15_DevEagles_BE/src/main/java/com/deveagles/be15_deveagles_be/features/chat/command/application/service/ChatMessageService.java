@@ -19,4 +19,6 @@ public interface ChatMessageService {
 
   List<ChatMessageResponse> getMessagesByChatroomAfter(
       String chatroomId, String messageId, int limit);
+
+  ChatMessageResponse sendRouletteResult(Long userId, String teamId, String result);
 }
