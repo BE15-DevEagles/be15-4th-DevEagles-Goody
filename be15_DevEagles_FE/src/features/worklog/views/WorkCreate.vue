@@ -1,6 +1,7 @@
 <script setup>
   import { ref, computed, onMounted } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
+  import { useToast } from 'vue-toastification';
   import BaseButton from '@/components/common/components/BaseButton.vue';
   import ConfirmModal from '@/features/worklog/components//ConfirmModal.vue';
   import { generateSummary } from '@/features/worklog/api/worklog.js';
@@ -10,6 +11,7 @@
   const route = useRoute();
   const router = useRouter();
   const teamStore = useTeamStore();
+  const toast = useToast();
 
   const form = ref({
     summary: '',
@@ -115,11 +117,11 @@
       };
 
       await api.post(`/worklog/register/${form.value.teamId}`, payload);
-      alert('등록이 완료되었습니다.');
+      toast.success('등록이 완료되었습니다.');
       router.push('/worklog/my');
     } catch (error) {
       console.error('등록 실패:', error);
-      alert('등록 중 오류가 발생했습니다.');
+      toast.error('등록 중 오류가 발생했습니다.');
     } finally {
       showSubmitModal.value = false;
     }
@@ -140,7 +142,7 @@
       form.value.summary = response.data?.data?.summary || '';
     } catch (error) {
       console.error('요약 실패:', error);
-      alert('AI 요약에 실패했습니다.');
+      toast.error('AI 요약에 실패했습니다.');
     } finally {
       loading.value = false;
     }
@@ -148,7 +150,7 @@
 
   function spellCheck() {
     // 추후 맞춤법 API 연동
-    alert('맞춤법 검사 기능은 준비 중입니다.');
+    toast.info('맞춤법 검사 기능은 준비 중입니다.');
   }
 </script>
 
