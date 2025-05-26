@@ -15,13 +15,13 @@ public class Comment {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long commentId;
 
-  @Column(name = "worklog_id")
+  @Column(name = "worklog_id", nullable = false)
   private Long worklogId;
 
-  @Column(name = "comment_content")
+  @Column(name = "comment_content", nullable = false)
   private String commentContent;
 
-  @Column(name = "created_at")
+  @Column(name = "created_at", nullable = false)
   private LocalDateTime createdAt;
 
   @Column(name = "updated_at")
@@ -30,23 +30,20 @@ public class Comment {
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
-  @Column(name = "user_id")
+  @Column(name = "user_id", nullable = false)
   private Long userId;
 
   @Builder
-  public Comment(
-      Long worklogId,
-      String commentContent,
-      LocalDateTime createdAt,
-      LocalDateTime updatedAt,
-      LocalDateTime deletedAt,
-      Long userId) {
+  public Comment(Long worklogId, String commentContent, Long userId) {
     this.worklogId = worklogId;
     this.commentContent = commentContent;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
-    this.deletedAt = deletedAt;
     this.userId = userId;
+  }
+
+  /** 💡 여기가 핵심: 엔티티 저장 직전에 createdAt 수동 설정 */
+  @PrePersist
+  protected void onCreate() {
+    this.createdAt = LocalDateTime.now();
   }
 
   public void updateContent(String content) {

@@ -35,7 +35,7 @@
 
     <!-- 생성 전 확인 모달 -->
     <BaseModal v-model="showConfirm" title="타임캡슐 생성 확인">
-      <template #default> 타임캡슐을 저장하시겠습니까? </template>
+      <template #default> 타임캡슐을 생성하시겠습니까? </template>
       <template #footer>
         <BaseButton type="error" @click="showConfirm = false">취소</BaseButton>
         <BaseButton type="primary" @click="onSubmitConfirm">확인</BaseButton>

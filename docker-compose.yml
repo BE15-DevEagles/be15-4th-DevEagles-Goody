@@ -1,4 +1,31 @@
 services:
+  backend:
+    build: ./be15_DevEagles_BE
+    image: gyeongmin03/k8s-boot-ing:latest
+    container_name: backend
+    ports:
+      - "8080:8080"
+    networks:
+      - app-public
+      - app-private
+
+  frontend:
+    build: ./be15_DevEagles_FE
+    image: gyeongmin03/k8s-vue-ing:latest
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    networks:
+      - app-public
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - app-private
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -6,6 +33,8 @@ services:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - app-private
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -19,3 +48,20 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
+    networks:
+      - app-private
+
+  tester:
+    image: alpine
+    container_name: net-tester
+    command: sleep 3600       # 실습용으로 쉘 접근 전용
+    networks:
+      - app-public
+
+
+networks:
+  app-public:
+    driver: bridge
+  app-private:
+    driver: bridge
+    internal: true
