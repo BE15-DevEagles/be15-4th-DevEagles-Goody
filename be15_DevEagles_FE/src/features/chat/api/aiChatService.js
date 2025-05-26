@@ -1,8 +1,8 @@
 import api from '@/api/axios';
+import { createLogger } from '@/utils/logger.js';
 
-/**
- * AI 채팅방 생성 또는 가져오기
- */
+const logger = createLogger('aiChatService');
+
 export async function createOrGetAiChatRoom(userId, aiName = '수리AI') {
   try {
     const response = await api.post('/ai-chat', null, {
@@ -10,14 +10,11 @@ export async function createOrGetAiChatRoom(userId, aiName = '수리AI') {
     });
     return response.data.data;
   } catch (error) {
-    console.error('AI 채팅방 생성 실패:', error);
+    logger.error('AI 채팅방 생성 실패:', error);
     throw error;
   }
 }
 
-/**
- * 사용자의 AI 채팅방 목록 조회
- */
 export async function getUserAiChatRooms(userId) {
   try {
     const response = await api.get('/ai-chat/me', {
@@ -25,28 +22,21 @@ export async function getUserAiChatRooms(userId) {
     });
     return response.data.data;
   } catch (error) {
-    console.error('AI 채팅방 목록 조회 실패:', error);
-    // AI 채팅방이 없는 경우 빈 배열 반환
+    logger.error('AI 채팅방 목록 조회 실패:', error);
     return [];
   }
 }
 
-/**
- * 사용자의 AI 채팅방 조회 (단일)
- */
 export async function getUserAiChatRoom(userId) {
   try {
     const aiChatRooms = await getUserAiChatRooms(userId);
     return aiChatRooms.length > 0 ? aiChatRooms[0] : null;
   } catch (error) {
-    console.error('AI 채팅방 조회 실패:', error);
+    logger.error('AI 채팅방 조회 실패:', error);
     return null;
   }
 }
 
-/**
- * AI 채팅방 메시지 조회
- */
 export async function getAiChatMessages(chatroomId, page = 0, size = 20) {
   try {
     const response = await api.get(`/ai-chat/${chatroomId}/messages`, {
@@ -54,14 +44,11 @@ export async function getAiChatMessages(chatroomId, page = 0, size = 20) {
     });
     return response.data.data;
   } catch (error) {
-    console.error('AI 채팅 메시지 조회 실패:', error);
+    logger.error('AI 채팅 메시지 조회 실패:', error);
     throw error;
   }
 }
 
-/**
- * 기분 질문 생성 요청
- */
 export async function generateMoodInquiry(userId) {
   try {
     const response = await api.post('/ai-chat/mood-inquiry', null, {
@@ -70,17 +57,13 @@ export async function generateMoodInquiry(userId) {
     return response.data.data;
   } catch (error) {
     if (error.response?.status === 400) {
-      // 이미 오늘 기분 질문이 전송된 경우
       return null;
     }
-    console.error('기분 질문 생성 실패:', error);
+    logger.error('기분 질문 생성 실패:', error);
     throw error;
   }
 }
 
-/**
- * 기분 답변 저장
- */
 export async function saveMoodAnswer(inquiryId, answer) {
   try {
     const response = await api.post('/ai-chat/mood-answer', {
@@ -89,14 +72,11 @@ export async function saveMoodAnswer(inquiryId, answer) {
     });
     return response.data.data;
   } catch (error) {
-    console.error('기분 답변 저장 실패:', error);
+    logger.error('기분 답변 저장 실패:', error);
     throw error;
   }
 }
 
-/**
- * 사용자 기분 히스토리 조회
- */
 export async function getUserMoodHistory(userId) {
   try {
     const response = await api.get('/ai-chat/mood-history', {
@@ -104,7 +84,7 @@ export async function getUserMoodHistory(userId) {
     });
     return response.data.data;
   } catch (error) {
-    console.error('기분 히스토리 조회 실패:', error);
+    logger.error('기분 히스토리 조회 실패:', error);
     throw error;
   }
 }
