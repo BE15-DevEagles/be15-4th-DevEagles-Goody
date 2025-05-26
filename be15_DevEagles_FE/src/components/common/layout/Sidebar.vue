@@ -165,7 +165,8 @@
 
   // Mock 데이터
   const workspaceItems = ref([
-    { name: '홈', icon: homeIcon, route: '/calendar/my', active: false },
+    { name: '홈', icon: homeIcon, route: '/', active: false },
+    { name: '내 캘린더', icon: calendarIcon, route: '/calendar/my', active: false },
   ]);
 
   function handleWorkspaceClick(item) {
@@ -220,7 +221,14 @@
   // 현재 라우트가 활성 상태인지 확인
   function isActiveRoute(targetRoute) {
     if (!targetRoute) return false;
-    return route.path === targetRoute || route.path.startsWith(targetRoute);
+
+    // 홈 경로는 정확히 일치할 때만 활성화
+    if (targetRoute === '/') {
+      return route.path === '/';
+    }
+
+    // 다른 경로는 시작 문자열로 매칭
+    return route.path === targetRoute || route.path.startsWith(targetRoute + '/');
   }
 
   // 채널이 활성 상태인지 확인

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/store/auth.js';
 
 const exceptToken = [
   { method: 'post', url: '/auth/login' },
+  { method: 'post', url: '/auth/refresh' },
   { method: 'post', url: '/users$' },
   { method: 'post', url: '/users/duplcheck' },
   { method: 'patch', url: '/users/email/pwd' },

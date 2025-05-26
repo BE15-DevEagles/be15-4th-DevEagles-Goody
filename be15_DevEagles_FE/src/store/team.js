@@ -92,5 +92,27 @@ export const useTeamStore = defineStore('team', {
         this.loading = false;
       }
     },
+
+    // 경량화된 팀 설정 (채팅방 새로고침 없이)
+    async setCurrentTeamLite(teamId) {
+      if (!teamId || teamId === 'undefined' || teamId === 'null') {
+        console.warn('유효하지 않은 teamId:', teamId);
+        this.currentTeam = null;
+        return;
+      }
+
+      try {
+        // 팀 상세 정보만 조회
+        const teamRes = await api.get(`teams/teams/${teamId}`);
+        this.currentTeam = teamRes.data.data;
+        localStorage.setItem('lastSelectedTeam', teamId);
+        console.log('[setCurrentTeamLite] 팀 정보만 설정 완료:', teamId);
+      } catch (err) {
+        this.error = err.message;
+        console.error('경량 팀 설정 실패:', err);
+        this.currentTeam = null;
+        throw err;
+      }
+    },
   },
 });

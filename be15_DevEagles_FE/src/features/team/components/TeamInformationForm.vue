@@ -1,14 +1,15 @@
 <template>
-  <div
-    class="w-[515px] max-h-[calc(100vh-100px)] rounded-xl border border-[var(--color-gray-200)] bg-white shadow-sm flex flex-col"
-  >
-    <div class="flex-1 overflow-y-auto p-6">
-      <!-- 썸네일 + 팀명 + 버튼 -->
-      <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center space-x-4">
+  <div class="w-full max-w-4xl mx-auto">
+    <div class="p-8">
+      <!-- 팀 헤더 섹션 -->
+      <div
+        class="flex items-center justify-between mb-8 pb-6 border-b border-[var(--color-gray-200)]"
+      >
+        <div class="flex items-center space-x-6">
+          <!-- 팀 썸네일 -->
           <div
-            class="w-[80px] h-[80px] rounded-full overflow-hidden bg-gray-200 flex items-center justify-center"
-            :class="{ 'cursor-pointer': isTeamLeader }"
+            class="relative w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-[var(--color-primary-main)] to-[var(--color-secondary-main)] flex items-center justify-center shadow-lg group cursor-pointer"
+            :class="{ 'hover:scale-105 transition-transform duration-300': isTeamLeader }"
             @click="openThumbnailModal"
           >
             <img
@@ -17,84 +18,212 @@
               :alt="teamName"
               class="w-full h-full object-cover"
             />
-            <span v-else class="text-white text-xl font-bold">
+            <span v-else class="text-white text-2xl font-bold">
               {{ teamName?.charAt(0) || '?' }}
             </span>
+            <!-- 편집 오버레이 -->
+            <div
+              v-if="isTeamLeader"
+              class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center cursor-pointer"
+              @click="isThumbnailModalOpen = true"
+            >
+              <span class="text-white font-one-liner-semibold">편집</span>
+            </div>
           </div>
-          <h2 class="text-xl font-bold">{{ teamName || '팀 이름 없음' }}</h2>
+
+          <!-- 팀 정보 -->
+          <div>
+            <h2 class="text-2xl font-bold text-[var(--color-gray-900)] mb-1">
+              {{ teamName || '팀 이름 없음' }}
+            </h2>
+            <div class="flex items-center space-x-2">
+              <span
+                class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[var(--color-primary-100)] text-[var(--color-primary-main)]"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                {{ members.length }}명
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="flex gap-3">
+
+        <!-- 액션 버튼들 -->
+        <div class="flex space-x-3">
           <BaseButton
             v-if="isTeamLeader"
-            type=""
-            class="text-black hover:text-[#dc2626]"
-            size="sm"
+            type="error"
+            class="px-4 py-2 text-sm font-medium rounded-xl hover:scale-105 transition-transform duration-200"
             @click="isDeleteModalOpen = true"
           >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
+            </svg>
             팀 삭제
           </BaseButton>
           <BaseButton
-            type=""
-            class="text-black hover:text-[#dc2626]"
-            size="sm"
+            type="secondary"
+            class="px-4 py-2 text-sm font-medium rounded-xl hover:scale-105 transition-transform duration-200"
             @click="isWithdrawModalOpen = true"
           >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
             팀 탈퇴
           </BaseButton>
         </div>
       </div>
 
-      <!-- 팀 소개 -->
-      <div
-        class="w-full min-h-[96px] p-3 border border-gray-300 rounded-md bg-gray-50 text-gray-700 whitespace-pre-wrap"
-      >
-        {{ teamIntroduction || '팀 설명이 아직 없습니다.' }}
+      <!-- 팀 소개 섹션 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-[var(--color-gray-900)] mb-4 flex items-center">
+          <svg
+            class="w-5 h-5 mr-2 text-[var(--color-primary-main)]"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          팀 소개
+        </h3>
+        <div
+          class="bg-[var(--color-gray-50)] rounded-2xl p-6 border border-[var(--color-gray-200)]"
+        >
+          <p class="text-[var(--color-gray-700)] leading-relaxed whitespace-pre-wrap">
+            {{ teamIntroduction || '팀 설명이 아직 없습니다.' }}
+          </p>
+        </div>
       </div>
 
-      <!-- 팀원 목록 -->
-      <div class="mt-6">
-        <div class="flex justify-between items-center mb-2">
-          <span class="text-sm text-gray-500">팀원</span>
-          <button
+      <!-- 팀원 목록 섹션 -->
+      <div class="mb-8">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-semibold text-[var(--color-gray-900)] flex items-center">
+            <svg
+              class="w-5 h-5 mr-2 text-[var(--color-primary-main)]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
+            </svg>
+            팀원 목록
+          </h3>
+          <BaseButton
             v-if="isTeamLeader"
-            class="text-sm text-gray-500 hover:text-[#064e3b]"
+            type="primary"
+            class="px-4 py-2 text-sm font-medium rounded-xl hover:scale-105 transition-transform duration-200"
             @click="isInviteModalOpen = true"
           >
-            + 팀원 초대
-          </button>
-        </div>
-        <div class="max-h-[200px] overflow-y-auto pr-1 border rounded-md">
-          <ul class="space-y-2 p-2">
-            <li
-              v-for="member in members"
-              :key="member.userId"
-              class="flex justify-between items-center border-b border-gray-200 pb-2"
-            >
-              <div class="flex items-center gap-6">
-                <span class="text-base font-semibold text-gray-800 w-24">{{
-                  member.userName
-                }}</span>
-                <span class="text-sm text-gray-500">{{ member.email }}</span>
-              </div>
-              <input
-                v-if="isTeamLeader"
-                v-model="selectedUserId"
-                type="radio"
-                :value="member.userId"
-                class="accent-[#257180]"
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
               />
-            </li>
-          </ul>
+            </svg>
+            팀원 초대
+          </BaseButton>
         </div>
-      </div>
 
-      <!-- 하단 버튼 -->
-      <div class="p-4 border-t border-gray-100">
-        <div v-if="isTeamLeader" class="flex gap-2 justify-end mb-3">
-          <BaseButton type="secondary" size="sm" @click="openFireModal">추방</BaseButton>
-          <BaseButton type="secondary" size="sm" @click="isTransferModalOpen = true"
-            >팀장 양도</BaseButton
-          >
+        <!-- 팀원 목록 테이블 -->
+        <div
+          class="bg-white rounded-2xl border border-[var(--color-gray-200)] shadow-drop overflow-hidden"
+        >
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-[var(--color-gray-50)] border-b border-[var(--color-gray-200)]">
+                <tr>
+                  <th class="px-6 py-4 text-left font-section-inner text-[var(--color-gray-700)]">
+                    이름
+                  </th>
+                  <th class="px-6 py-4 text-left font-section-inner text-[var(--color-gray-700)]">
+                    이메일
+                  </th>
+                  <th
+                    v-if="isTeamLeader"
+                    class="px-6 py-4 text-right font-section-inner text-[var(--color-gray-700)]"
+                  >
+                    관리
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--color-gray-200)]">
+                <tr
+                  v-for="member in members"
+                  :key="member.userId"
+                  class="group hover:bg-[var(--color-gray-50)] transition-colors duration-200"
+                >
+                  <td class="px-6 py-4">
+                    <div class="flex items-center space-x-3">
+                      <span class="font-one-liner-semibold text-[var(--color-gray-900)]">{{
+                        member.userName
+                      }}</span>
+                      <span
+                        v-if="member.userId === teamOwnerId"
+                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[var(--color-warning-100)] text-[var(--color-warning-600)]"
+                      >
+                        팀장
+                      </span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="font-one-liner text-[var(--color-gray-600)]">{{
+                      member.email
+                    }}</span>
+                  </td>
+                  <td v-if="isTeamLeader" class="px-6 py-4 text-right">
+                    <div
+                      v-if="member.userId !== currentUserId"
+                      class="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    >
+                      <button
+                        class="px-3 py-1 text-xs font-medium text-[var(--color-error-600)] bg-[var(--color-error-100)] rounded-lg hover:bg-[var(--color-error-200)] transition-colors duration-200"
+                        @click="openFireModalForUser(member.userId, member.email)"
+                      >
+                        추방
+                      </button>
+                      <button
+                        class="px-3 py-1 text-xs font-medium text-[var(--color-secondary-600)] bg-[var(--color-secondary-100)] rounded-lg hover:bg-[var(--color-secondary-200)] transition-colors duration-200"
+                        @click="openTransferModalForUser(member.userId, member.email)"
+                      >
+                        팀장 양도
+                      </button>
+                    </div>
+                    <span v-else class="text-xs text-[var(--color-gray-400)]">본인</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -210,12 +339,14 @@
     if (isTeamLeader.value) isThumbnailModalOpen.value = true;
   }
 
-  function openFireModal() {
-    if (!selectedUserId.value) {
-      alert('추방할 팀원을 선택해주세요.');
-      return;
-    }
+  function openFireModalForUser(userId, email) {
+    selectedUserId.value = userId;
     showFireModal.value = true;
+  }
+
+  function openTransferModalForUser(userId, email) {
+    selectedUserId.value = userId;
+    isTransferModalOpen.value = true;
   }
 
   function getSelectedEmail() {

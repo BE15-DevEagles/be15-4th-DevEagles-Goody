@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,6 +28,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/admin/messages")
 @Tag(name = "메시지 관리", description = "메시지 관리 API (관리자용)")
 public class ChatMessageController {
+
+  private static final Logger log = LoggerFactory.getLogger(ChatMessageController.class);
 
   private final ChatMessageService chatMessageService;
   private final ChatMessageRepository chatMessageRepository;

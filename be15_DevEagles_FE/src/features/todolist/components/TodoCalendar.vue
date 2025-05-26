@@ -156,25 +156,165 @@
 </template>
 
 <style>
+  /* 툴팁 스타일 */
   .tippy-box[data-theme~='light-border'] {
-    background-color: var(--color-info-50);
+    background-color: var(--color-neutral-white);
     color: var(--color-neutral-dark);
-    border: 1px solid var(--color-info-300);
-    font-size: 13px;
+    border: 1px solid var(--color-gray-300);
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
     border-radius: 0.5rem;
     padding: 0.75rem;
-    box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 40px -10px rgba(0, 0, 0, 0.15);
+    line-height: 1.4;
   }
+
   .tippy-box[data-theme~='light-border'][data-placement^='top'] > .tippy-arrow::before {
-    border-top-color: var(--color-info-300);
+    border-top-color: var(--color-gray-300);
   }
   .tippy-box[data-theme~='light-border'][data-placement^='bottom'] > .tippy-arrow::before {
-    border-bottom-color: var(--color-info-300);
+    border-bottom-color: var(--color-gray-300);
   }
   .tippy-box[data-theme~='light-border'][data-placement^='left'] > .tippy-arrow::before {
-    border-left-color: var(--color-info-300);
+    border-left-color: var(--color-gray-300);
   }
   .tippy-box[data-theme~='light-border'][data-placement^='right'] > .tippy-arrow::before {
-    border-right-color: var(--color-info-300);
+    border-right-color: var(--color-gray-300);
+  }
+
+  /* FullCalendar 전역 스타일 개선 */
+  .fc {
+    font-family: 'Noto Sans KR', sans-serif !important;
+    font-size: 13px !important;
+  }
+
+  /* 캘린더 헤더 툴바 */
+  .fc-toolbar {
+    margin-bottom: 1rem !important;
+  }
+
+  .fc-toolbar-title {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    color: var(--color-neutral-dark) !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* 캘린더 버튼들 */
+  .fc .fc-button {
+    background: var(--color-primary-main) !important;
+    color: var(--color-neutral-white) !important;
+    border: none !important;
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    border-radius: 0.375rem !important;
+    padding: 0.375rem 0.75rem !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .fc .fc-button:hover {
+    background: var(--color-primary-400) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  .fc .fc-button:active {
+    background: var(--color-primary-500) !important;
+    transform: translateY(0) !important;
+  }
+
+  .fc .fc-button:disabled {
+    background: var(--color-gray-200) !important;
+    color: var(--color-gray-500) !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+  }
+
+  /* 요일 헤더 */
+  .fc-col-header-cell {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    background: var(--color-gray-50) !important;
+    color: var(--color-gray-700) !important;
+    padding: 0.5rem !important;
+  }
+
+  .fc-col-header-cell-cushion {
+    padding: 0.25rem !important;
+  }
+
+  /* 날짜 숫자 */
+  .fc-daygrid-day-number {
+    font-family: 'Pretendard', 'Noto Sans KR', sans-serif !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    color: var(--color-gray-700) !important;
+    padding: 0.25rem !important;
+  }
+
+  /* 오늘 날짜 강조 */
+  .fc-day-today {
+    background-color: var(--color-primary-50) !important;
+  }
+
+  .fc-day-today .fc-daygrid-day-number {
+    background: var(--color-primary-main) !important;
+    color: var(--color-neutral-white) !important;
+    border-radius: 50% !important;
+    width: 24px !important;
+    height: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+  }
+
+  /* 이벤트 스타일 */
+  .fc-event {
+    border-radius: 4px !important;
+    border: none !important;
+    font-weight: 600 !important;
+    font-size: 11px !important;
+    padding: 1px 4px !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+    line-height: 1.2 !important;
+  }
+
+  .fc-event-title {
+    font-weight: 600 !important;
+    font-size: 11px !important;
+  }
+
+  .fc-daygrid-event {
+    margin: 1px 1px !important;
+    min-height: 18px !important;
+  }
+
+  /* 캘린더 셀 */
+  .fc-daygrid-day {
+    min-height: 32px !important;
+  }
+
+  .fc-daygrid-day-frame {
+    min-height: 32px !important;
+  }
+
+  /* 더보기 링크 */
+  .fc-daygrid-more-link {
+    font-family: 'Noto Sans KR', sans-serif !important;
+    font-size: 10px !important;
+    color: var(--color-primary-main) !important;
+    font-weight: 600 !important;
+  }
+
+  /* 주말 스타일 */
+  .fc-day-sat .fc-daygrid-day-number {
+    color: var(--color-primary-main) !important;
+  }
+
+  .fc-day-sun .fc-daygrid-day-number {
+    color: var(--color-error-300) !important;
   }
 </style>

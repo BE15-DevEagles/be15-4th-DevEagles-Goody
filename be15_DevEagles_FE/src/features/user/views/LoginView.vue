@@ -163,7 +163,7 @@
       const res = await login(params.value);
 
       await authStore.setAuth(res.data.data.accessToken);
-      localStorage.setItem('refreshToken', res.data.data.refreshToken);
+      // refreshToken은 HttpOnly 쿠키로 자동 설정됨
 
       const res_valid = await validUserStatus();
       const isValid = res_valid.data.data;

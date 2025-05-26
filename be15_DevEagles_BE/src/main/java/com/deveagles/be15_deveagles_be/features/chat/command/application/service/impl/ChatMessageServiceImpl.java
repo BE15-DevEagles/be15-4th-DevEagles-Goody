@@ -65,9 +65,10 @@ public class ChatMessageServiceImpl implements ChatMessageService {
     // AI 사용자에 대한 특별 처리
     boolean isAiUser = "ai-assistant".equals(request.getSenderId());
     boolean isAiChatRoom = chatRoom.getType() == ChatRoom.ChatRoomType.AI;
+    boolean isTeamChatRoom = chatRoom.getType() == ChatRoom.ChatRoomType.TEAM;
 
-    // AI 사용자가 AI 채팅방에서 메시지를 보내는 경우 권한 검증 생략
-    if (!isAiUser || !isAiChatRoom) {
+    // AI 사용자가 AI 채팅방 또는 팀 채팅방에서 메시지를 보내는 경우 권한 검증 생략
+    if (!isAiUser || (!isAiChatRoom && !isTeamChatRoom)) {
       boolean isParticipant =
           chatRoom.getActiveParticipants().stream()
               .anyMatch(participant -> participant.getUserId().equals(request.getSenderId()));
@@ -231,5 +232,29 @@ public class ChatMessageServiceImpl implements ChatMessageService {
 
     chatRoom.updateLastMessage(lastMessageInfo);
     chatRoomRepository.save(chatRoom);
+  }
+
+  @Override
+  @Transactional
+  public ChatMessageResponse sendRouletteResult(Long userId, String teamId, String result) {
+    // 팀의 기본 채팅방 찾기
+    ChatRoom defaultChatRoom =
+        chatRoomRepository
+            .findDefaultChatRoomByTeamId(teamId)
+            .orElseThrow(() -> new ChatBusinessException(ChatErrorCode.CHAT_ROOM_NOT_FOUND));
+
+    // AI 수리가 룰렛 결과 메시지 전송
+    String content = String.format("🎲 룰렛 결과: %s", result);
+
+    ChatMessageRequest aiMessageRequest =
+        ChatMessageRequest.builder()
+            .chatroomId(defaultChatRoom.getId())
+            .senderId("ai-assistant")
+            .senderName("수리 AI")
+            .messageType(ChatMessage.MessageType.TEXT)
+            .content(content)
+            .build();
+
+    return sendMessage(aiMessageRequest);
   }
 }
