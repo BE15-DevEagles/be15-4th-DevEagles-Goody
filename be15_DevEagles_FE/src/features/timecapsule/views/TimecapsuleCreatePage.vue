@@ -1,7 +1,5 @@
 <template>
-  <div class="timecapsule-center-wrapper">
-    <TimecapsuleCreateForm />
-  </div>
+  <TimecapsuleCreateForm />
 </template>
 
 <script setup>
