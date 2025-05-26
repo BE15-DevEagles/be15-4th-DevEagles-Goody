@@ -8,6 +8,7 @@ import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogDetailResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.dto.response.WorklogResponse;
 import com.deveagles.be15_deveagles_be.features.worklog.command.application.service.WorklogService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ public class WorklogCommandController {
 
   /*업무일지 등록*/
   @PostMapping("/register/{teamId}")
+  @Operation(summary = "업무일지 등록", description = "사용자가 업무일지를 작성합니다.")
   public ResponseEntity<ApiResponse<WorklogDetailResponse>> registerWorklog(
       @RequestBody WorklogCreateRequest worklogCreateRequest,
       @AuthenticationPrincipal CustomUser customUser,
@@ -34,6 +36,7 @@ public class WorklogCommandController {
   }
 
   /*내 업무일지 조회*/
+  @Operation(summary = "내 업무일지 조회", description = "로그인한 사용자의 업무일지 목록을 검색 조건에 따라 조회합니다.")
   @PostMapping("/myworklog")
   public ResponseEntity<ApiResponse<PagedResponse<WorklogResponse>>> searchMyWorklog(
       @AuthenticationPrincipal CustomUser customUser, @RequestBody SearchWorklogRequest request) {
@@ -44,6 +47,7 @@ public class WorklogCommandController {
   }
 
   /*팀 업무일지 조회*/
+  @Operation(summary = "팀 업무일지 조회", description = "소속된 팀의 모든 업무일지 목록을 검색 조건에 따라 조회합니다.")
   @PostMapping("/team")
   public ResponseEntity<ApiResponse<PagedResponse<WorklogResponse>>> getTeamWorklogs(
       @AuthenticationPrincipal CustomUser customUser, @RequestBody SearchWorklogRequest request) {
@@ -54,6 +58,7 @@ public class WorklogCommandController {
   }
 
   /*업무일지 상세조회*/
+  @Operation(summary = "업무일지 상세 조회", description = "특정 업무일지의 상세 정보를 조회합니다.")
   @GetMapping("/{worklogId}")
   public ResponseEntity<ApiResponse<WorklogDetailResponse>> getWorklog(
       @PathVariable Long worklogId, @AuthenticationPrincipal CustomUser customUser) {
