@@ -151,7 +151,8 @@
 
 ### <p id="1-5">1-5. 요구사항 명세서</p>
 <a href="https://docs.google.com/spreadsheets/d/1U8m1JELnGQVUdPE-0LaRpbx8tudPsHUH3hgkjvbynP4/edit?gid=0#gid=0">요구사항 명세서</a>
-![요구사항명세서](https://github.com/user-attachments/assets/7c10e05c-bab4-4e4a-8dd8-4b3cae3e6d39)
+![요구사항명세서](https://github.com/user-attachments/assets/1bafb098-7c00-40a2-b86e-22c0848ad2c9)
+
 
 <br><br>
 
@@ -515,8 +516,11 @@ pipeline {
 
 - 업무일지 작성 및 ai 요약
   ![worklog_create](https://github.com/BE15-DevEagles/be15-4th-DevEagles-Goody/blob/main/be15_DevEagles_FE/src/assets/fe_test/goody_worklog_create.gif)
+- 업무일지 맞춤법 검사
+  ![worklog_spell_check](https://github.com/BE15-DevEagles/be15-4th-DevEagles-Goody/blob/main/be15_DevEagles_FE/src/assets/fe_test/goody_worklog_spell.gif)
 - 업무일지 상세보기 및 댓글
   ![worklog_select](https://github.com/BE15-DevEagles/be15-4th-DevEagles-Goody/blob/main/be15_DevEagles_FE/src/assets/fe_test/goody_worklog_select.gif)
+
 
 </details>
 
