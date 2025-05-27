@@ -227,7 +227,157 @@
 
 ##  <p id="4"> ⚙️ 4. 빌드 및 배포 문서</p>
 ### <p id="4-1">4-1. Jenkins Pipeline Script </p>
+``` jenkins
+pipeline {
+    agent any
 
+    tools {
+        gradle 'gradle'
+        jdk 'openJDK17'
+    }
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('DOCKERHUB_PASSWORD')
+        GITHUB_URL = 'https://github.com/BE15-DevEagles/be15-4th-DevEagles-Goody'
+    }
+
+    stages {
+        stage('Preparation') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh 'docker --version'
+                        sh 'node -v'
+                        sh 'npm -v'
+                    } else {
+                        bat 'docker --version'
+                        bat 'node -v'
+                        bat 'npm -v'
+                    }
+                }
+            }
+        }
+
+        stage('Checkout Source') {
+            steps {
+                git branch: 'main', url: "${env.GITHUB_URL}"
+            }
+        }
+
+        stage('Backend Build') {
+            steps {
+                dir('be15_DevEagles_BE') {
+                    script {
+                        if (isUnix()) {
+                            sh "chmod +x ./gradlew"
+                            sh "./gradlew clean build"
+                        } else {
+                            bat "gradlew.bat clean build"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Frontend Build') {
+            steps {
+                dir('be15_DevEagles_FE') {
+                    script {
+                        if (isUnix()) {
+                            sh "npm install"
+                            sh "npm run build"
+                        } else {
+                            bat "npm install"
+                            bat "npm run build"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Docker Build and Push') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        // Backend 이미지 빌드 및 푸시
+                        dir('be15_DevEagles_BE') {
+                            def backendImage = "${DOCKER_USER}/dev-eagles-backend:latest"
+                            if (isUnix()) {
+                                sh "docker build -t ${backendImage} ."
+                                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                                sh "docker push ${backendImage}"
+                            } else {
+                                bat "docker build -t ${backendImage} ."
+                                bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                                bat "docker push ${backendImage}"
+                            }
+                        }
+
+                        // Frontend 이미지 빌드 및 푸시
+                        dir('be15_DevEagles_FE') {
+                            def frontendImage = "${DOCKER_USER}/dev-eagles-frontend:latest"
+                            if (isUnix()) {
+                                sh "docker build -t ${frontendImage} ."
+                                sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                                sh "docker push ${frontendImage}"
+                            } else {
+                                bat "docker build -t ${frontendImage} ."
+                                bat "docker login -u %DOCKER_USER% -p %DOCKER_PASS%"
+                                bat "docker push ${frontendImage}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            script {
+                if (isUnix()) {
+                    sh 'docker logout'
+                } else {
+                    bat 'docker logout'
+                }
+            }
+        }
+         success {
+            withCredentials([string(credentialsId: 'discord', variable: 'DISCORD')]) {
+                discordSend(
+                    description: """
+                    **빌드 성공!** :tada:
+                    
+                    **제목**: ${currentBuild.displayName}
+                    **결과**: :white_check_mark: ${currentBuild.currentResult}
+                    **실행 시간**: ${currentBuild.duration / 1000}s
+                    **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """,
+                    title: "${env.JOB_NAME} 빌드 성공!", 
+                    webhookURL: "$DISCORD"
+                )
+            }
+        }
+        failure {
+            withCredentials([string(credentialsId: 'discord', variable: 'DISCORD')]) {
+                discordSend(
+                    description: """
+                    **빌드 실패!** :x:
+                    
+                    **제목**: ${currentBuild.displayName}
+                    **결과**: :x: ${currentBuild.currentResult}
+                    **실행 시간**: ${currentBuild.duration / 1000}s
+                    **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """,
+                    title: "${env.JOB_NAME} 빌드 실패!", 
+                    webhookURL: "$DISCORD"
+                )
+            }
+        }
+    }
+}
+
+```
 
 ##  <p id="5"> 🛠️ 5. API 문서</p>
 ### <p id="5-1">5-1. Swagger API 문서</p>
