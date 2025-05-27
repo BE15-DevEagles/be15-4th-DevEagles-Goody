@@ -1,6 +1,6 @@
 <template>
   <div class="roulette-container">
-    <h2 class="roulette-title">룰렛</h2>
+    <h2 class="roulette-title"></h2>
     <form class="option-form" @submit.prevent="addOption">
       <input
         v-model="newOption"
@@ -90,16 +90,6 @@
         <button class="modal-btn modal-btn-confirm" @click="confirmReset">확인</button>
       </template>
     </BaseModal>
-
-    <!-- ★ 완료 모달 (BaseModal 사용, 애니메이션 없음) -->
-    <BaseModal v-model="showCompleteModal" title="초기화 완료">
-      <template #default>
-        <p>초기화 되었습니다</p>
-      </template>
-      <template #footer>
-        <button class="modal-btn modal-btn-confirm" @click="showCompleteModal = false">확인</button>
-      </template>
-    </BaseModal>
   </div>
 </template>
 
@@ -120,9 +110,8 @@
   const rotation = ref(0);
   const result = ref(null);
 
-  // ★ 모달 상태 추가
+  // ★ 모달 상태 추가 (확인 모달만)
   const showConfirmModal = ref(false);
-  const showCompleteModal = ref(false);
 
   const colorList = [
     '#257180',
@@ -156,7 +145,7 @@
     result.value = null;
   }
 
-  // ★ 초기화 확인 함수 (BaseModal 사용)
+  // ★ 초기화 확인 함수 (BaseModal 사용, 완료 모달 제거)
   function confirmReset() {
     if (!optionsMap.value[teamId.value] || optionsMap.value[teamId.value].length === 0) return;
 
@@ -165,9 +154,8 @@
     result.value = null;
     newOption.value = '';
 
-    // 확인 모달 닫고 완료 모달 열기
+    // 확인 모달만 닫기
     showConfirmModal.value = false;
-    showCompleteModal.value = true;
   }
 
   // slice 시작 각도 (기본, 보정 없음)
