@@ -5,7 +5,7 @@
 
 ## 🦅 DevEagles 팀원 소개 
 
-<table style="width: 100%; text-align: center;">
+<table style="width: 100%; text-align: center;"> 
   <tr>
     <td align="center"> <a href="https://github.com/gyeongmin03">김경민</a></td>
     <td align="center"> <a href="https://github.com/wishbornDev">김소원</a></td>
