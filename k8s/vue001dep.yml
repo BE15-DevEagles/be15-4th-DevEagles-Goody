@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vue001dep
+spec:
+  selector:
+    matchLabels:
+      app: vue001kube
+  template:
+    metadata:
+      labels:
+        app: vue001kube
+    spec:
+      containers:
+        - name: vue-container
+          image: gyeongmin03/k8s-vue-ing:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80      # 5173이 아니라 80으로 바꿔야 한다.

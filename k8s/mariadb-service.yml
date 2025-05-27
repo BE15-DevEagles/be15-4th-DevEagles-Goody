@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb   # ✅ DB_URL에서 쓰는 이름과 일치해야 함
+spec:
+  selector:
+    app: mariadb  # ✅ MySQL Deployment의 label과 일치해야 함
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
