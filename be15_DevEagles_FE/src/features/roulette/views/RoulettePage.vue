@@ -18,7 +18,6 @@
       </span>
     </div>
 
-    <!-- ★ 초기화 버튼 추가 (옵션이 있을 때만 표시) -->
     <div v-if="currentOptions.length > 0" class="reset-section">
       <button class="reset-btn" @click="showConfirmModal = true">모든 옵션 초기화</button>
     </div>
@@ -79,7 +78,6 @@
       </div>
     </div>
 
-    <!-- ★ 확인 모달 (BaseModal 사용) -->
     <BaseModal v-model="showConfirmModal" title="초기화 확인">
       <template #default>
         <p>모든 옵션을 초기화 하시겠습니까?</p>
@@ -110,7 +108,6 @@
   const rotation = ref(0);
   const result = ref(null);
 
-  // ★ 모달 상태 추가 (확인 모달만)
   const showConfirmModal = ref(false);
 
   const colorList = [
@@ -145,7 +142,6 @@
     result.value = null;
   }
 
-  // ★ 초기화 확인 함수 (BaseModal 사용, 완료 모달 제거)
   function confirmReset() {
     if (!optionsMap.value[teamId.value] || optionsMap.value[teamId.value].length === 0) return;
 
