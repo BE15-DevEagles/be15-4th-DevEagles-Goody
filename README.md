@@ -470,6 +470,8 @@ pipeline {
 ## <p id="8"> 💡 8. 테스트 결과 </p>
 
 ### <p id="8-1">8-1. Jenkins CI/CD 테스트 결과 </p>
+[CI/CD 테스트 결과](https://www.youtube.com/watch?v=5NKmj1uPcro)
+
 
 ### <p id="8-2">8-2. FE 테스트 결과 </p>
 
