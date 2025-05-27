@@ -1,0 +1,218 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boot001dep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: boot001kube
+  template:
+    metadata:
+      labels:
+        app: boot001kube
+    spec:
+      containers:
+        - name: boot-container
+          image: gyeongmin03/k8s-boot-ing:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "local"
+
+            # DB
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: DB_PASSWORD
+
+            # MongoDB
+            - name: MONGODB_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MONGODB_URI
+
+            # Redis
+            - name: SPRING_DATA_REDIS_HOST
+              value: redis
+            - name: SPRING_DATA_REDIS_PORT
+              value: "6379"
+
+            # Mail
+            - name: SPRING_MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: EMAIL_ADDRESS
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: EMAIL_PASSWORD
+            - name: EMAIL_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: EMAIL_ADDRESS
+            - name: EMAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: EMAIL_PASSWORD
+            - name: AUTH_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: AUTH_URL
+            - name: PWD-URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: PWD-URL
+
+            # AWS S3
+            - name: BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: BUCKET
+            - name: ACCESSKEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: ACCESSKEY
+            - name: SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: SECRETKEY
+
+            # JWT
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: JWT_SECRET
+
+            # Gemini
+            - name: GEMINI_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: GEMINI_API_URL
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: GEMINI_API_KEY
+            - name: SUMMARY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: SUMMARY_API_KEY
+
+            # HuggingFace
+            - name: HUGGINGFACE_API_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: HUGGINGFACE_API_URL
+            - name: HUGGINGFACE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret
+                  key: HUGGINGFACE_API_KEY
+
+            # Hibernate Dialect
+            - name: SPRING_JPA_DATABASE_PLATFORM
+              value: org.hibernate.dialect.MariaDBDialect
+
+            # Multipart
+            - name: SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE
+              value: 30MB
+            - name: SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE
+              value: 30MB
+
+            # Kafka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka:9092
+            - name: SPRING_KAFKA_CONSUMER_GROUP_ID
+              value: chat-group
+            - name: SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET
+              value: latest
+            - name: SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER
+              value: org.apache.kafka.common.serialization.StringDeserializer
+            - name: SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER
+              value: org.springframework.kafka.support.serializer.JsonDeserializer
+            - name: SPRING_KAFKA_CONSUMER_PROPERTIES_SPRING_JSON_TRUSTED_PACKAGES
+              value: com.deveagles.be15_deveagles_be.*
+            - name: SPRING_KAFKA_PRODUCER_KEY_SERIALIZER
+              value: org.apache.kafka.common.serialization.StringSerializer
+            - name: SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER
+              value: org.springframework.kafka.support.serializer.JsonSerializer
+
+            # Elasticsearch
+            - name: SPRING_ELASTICSEARCH_URIS
+              value: http://elasticsearch:9200
+
+            # Logging
+            - name: LOGGING_LEVEL_ORG_HIBERNATE_SQL
+              value: debug
+            - name: LOGGING_LEVEL_ORG_HIBERNATE_TYPE
+              value: trace
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_MONGODB_CORE_MONGOTEMPLATE
+              value: debug
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_ELASTICSEARCH_CLIENT_WIRE
+              value: trace
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_KAFKA
+              value: info
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB_SOCKET
+              value: debug
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_MESSAGING
+              value: debug
+            - name: LOGGING_LEVEL_COM_DEVEAGLES_BE15_DEVEAGLES_BE
+              value: debug
+            - name: LOGGING_FILE_NAME
+              value: logs/application.log
+            - name: LOGGING_FILE_MAX_SIZE
+              value: 10MB
+            - name: LOGGING_FILE_MAX_HISTORY
+              value: "30"
+
+            # WebSocket
+            - name: WEBSOCKET_ALLOWED_ORIGINS
+              value: "*"
+            - name: WEBSOCKET_ENDPOINT
+              value: "/api/v1/ws"
+            - name: WEBSOCKET_APPLICATION_DESTINATION_PREFIX
+              value: "/app"
+            - name: WEBSOCKET_USER_DESTINATION_PREFIX
+              value: "/user"
+            - name: WEBSOCKET_BROKER_PREFIX
+              value: "/topic"
+
+            # Prometheus
+            - name: MANAGEMENT_ENDPOINT_PROMETHEUS_ENABLED
+              value: "true"
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: prometheus,health,info
+
+            # MyBatis
+            - name: MYBATIS_CONFIGURATION_MAP_UNDERSCORE_TO_CAMEL_CASE
+              value: "true"
+            - name: MYBATIS_MAPPER_LOCATIONS
+              value: "classpath:mappers/**/*.xml"
