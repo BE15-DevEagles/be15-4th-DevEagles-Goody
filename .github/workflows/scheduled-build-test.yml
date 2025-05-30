@@ -1,9 +1,9 @@
 name: Scheduled Build Test
 
 on:
-  schedule:
-    # 1시간마다 실행
-    - cron: "0 */1 * * *"
+  # schedule:
+  #   # 1시간마다 실행
+  #   - cron: "0 */1 * * *"
   workflow_dispatch: # 수동 트리거 허용
 
 jobs:
