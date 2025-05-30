@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: boot-deployment
+  namespace: deveagles
+spec:
+  selector:
+    matchLabels:
+      app: boot
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: boot
+    spec:
+      containers:
+        - name: boot-container
+          image: 64etuor/k8s-boot-ing:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka-service:9092"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: JWT_SECRET
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_URL
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_USERNAME
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_PASSWORD
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: MONGODB_URI
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GEMINI_API_KEY
+            - name: GEMINI_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: GEMINI_API_URL
+            - name: HUGGINGFACE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: HUGGINGFACE_API_KEY
+            - name: HUGGINGFACE_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: HUGGINGFACE_API_URL
+            - name: SUMMARY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SUMMARY_API_KEY
+            - name: BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: BUCKET
+            - name: ACCESSKEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ACCESSKEY
+            - name: SECRETKEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRETKEY
+            - name: EMAIL_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: EMAIL_ADDRESS
+            - name: EMAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: EMAIL_PASSWORD
+            - name: AUTH_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: AUTH_URL
+            - name: PWD_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: PWD_URL
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "300m"
+            limits:
+              memory: "1Gi"
+              cpu: "600m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: boot-service
+  namespace: deveagles
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8001
+      targetPort: 8080
+  selector:
+    app: boot
