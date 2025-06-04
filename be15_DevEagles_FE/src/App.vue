@@ -5,11 +5,6 @@
   <BaseModal v-model="showOpenModal" title="타임캡슐" animation-class="magical-appear">
     <template #default>
       <div class="timecapsule-alert">
-        <div class="magic-particles">
-          <div v-for="i in 15" :key="i" class="magic-particle" :style="getMagicParticleStyle(i)">
-            ✨
-          </div>
-        </div>
         <div class="timecapsule-icon">🕰️</div>
         <div class="alert-message">
           오픈할 타임캡슐이 있습니다.<br />
@@ -34,14 +29,12 @@
   <BaseModal v-model="showContentModal" title="타임캡슐" animation-class="back-in-left">
     <template #default>
       <div v-if="currentCapsule" class="timecapsule-content">
-        <!-- 신비로운 배경 효과 -->
         <div class="mystical-bg">
           <div v-for="i in 20" :key="i" class="floating-star" :style="getFloatingStarStyle(i)">
             ⭐
           </div>
         </div>
 
-        <!-- 타임캡슐 오픈 애니메이션 -->
         <div class="capsule-reveal" :class="{ revealed: showContent }">
           <div class="capsule-container">
             <div class="capsule-lid">🎁</div>
@@ -109,19 +102,6 @@
   // 현재 보여줄 타임캡슐
   const currentCapsule = computed(() => openCapsules.value[currentCapsuleIndex.value] || null);
 
-  // ★ 마법 파티클 스타일 생성
-  function getMagicParticleStyle(index) {
-    const angle = (index * 360) / 15;
-    const delay = index * 0.2;
-    const duration = 3 + Math.random() * 2;
-    return {
-      transform: `rotate(${angle}deg)`,
-      animationDelay: `${delay}s`,
-      animationDuration: `${duration}s`,
-    };
-  }
-
-  // ★ 설렘 이모지 스타일 생성
   function getExcitementStyle(index) {
     const delay = index * 0.3;
     return {
@@ -129,7 +109,6 @@
     };
   }
 
-  // ★ 떠다니는 별 스타일 생성
   function getFloatingStarStyle(index) {
     const x = Math.random() * 100;
     const y = Math.random() * 100;
@@ -262,26 +241,11 @@
 </script>
 
 <style scoped>
-  /* ★ 타임캡슐 알림 모달 스타일 */
   .timecapsule-alert {
     position: relative;
     text-align: center;
     padding: 20px;
     overflow: hidden;
-  }
-
-  .magic-particles {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-
-  .magic-particle {
-    position: absolute;
-    font-size: 1.2rem;
-    animation: magic-float 3s ease-in-out infinite;
   }
 
   .timecapsule-icon {
@@ -315,7 +279,6 @@
     animation: excitement-bounce 1.5s ease-in-out infinite;
   }
 
-  /* ★ 타임캡슐 내용 모달 스타일 */
   .timecapsule-content {
     position: relative;
     padding: 20px;
@@ -421,7 +384,6 @@
     font-size: 1.2rem;
   }
 
-  /* ★ 마법 버튼 스타일 */
   .magical-btn {
     position: relative;
     overflow: hidden;
@@ -459,19 +421,6 @@
     text-align: center;
     color: #888;
     padding: 40px 20px;
-  }
-
-  /* ★ 애니메이션 정의 */
-  @keyframes magic-float {
-    0%,
-    100% {
-      transform: translateY(0) rotate(0deg) scale(1);
-      opacity: 0.7;
-    }
-    50% {
-      transform: translateY(-20px) rotate(180deg) scale(1.2);
-      opacity: 1;
-    }
   }
 
   @keyframes icon-pulse {
@@ -555,7 +504,6 @@
     }
   }
 
-  /* BaseModal에 추가할 magical-appear 애니메이션 */
   .magical-appear {
     animation: magical-appear 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
