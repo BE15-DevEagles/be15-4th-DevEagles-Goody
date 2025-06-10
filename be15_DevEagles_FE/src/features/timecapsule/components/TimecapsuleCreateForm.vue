@@ -1,6 +1,11 @@
 <template>
   <div class="timecapsule-form-container">
     <form @submit.prevent="openConfirmModal">
+      <!-- 현재 팀 이름 표시 -->
+      <div class="team-name-row">
+        <span class="team-name-label"></span>
+        <span class="team-name-value">{{ teamName }}</span>
+      </div>
       <div class="form-row">
         <label for="openDate">오픈할 날짜</label>
         <input id="openDate" v-model="form.openDate" type="date" :min="today" required />
@@ -57,6 +62,12 @@
   const teamStore = useTeamStore();
   const teamId = computed(() => teamStore.currentTeamId);
 
+  // 현재 팀 이름 가져오기
+  const teamName = computed(() => {
+    const t = teamStore.teams.find(team => team.teamId === teamId.value);
+    return t ? t.teamName : '';
+  });
+
   const today = new Date().toISOString().split('T')[0];
 
   const form = reactive({
@@ -110,6 +121,23 @@
     margin: 36px auto;
     max-width: 800px;
     min-width: 400px;
+  }
+
+  .team-name-row {
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+  .team-name-label {
+    font-weight: 700;
+    color: #257180;
+    margin-right: 10px;
+  }
+  .team-name-value {
+    font-weight: 500;
+    color: #333;
   }
 
   .form-row {
